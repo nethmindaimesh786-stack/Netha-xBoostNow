@@ -1,1 +1,271 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#070713">
+<title>NETHA X ULTIMATE</title>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  min-height:100vh;
+  font-family:Arial,sans-serif;
+  color:#fff;
+  background:
+    radial-gradient(ellipse at 15% 10%,#24104d 0%,transparent 42%),
+    radial-gradient(ellipse at 90% 80%,#062b45 0%,transparent 42%),
+    #070713;
+  overflow-x:hidden;
+}
+
+.background-glow{
+  position:fixed;
+  width:240px;
+  height:240px;
+  border-radius:50%;
+  filter:blur(100px);
+  opacity:.25;
+  pointer-events:none;
+}
+
+.glow-one{
+  background:#8b35ff;
+  top:5%;
+  left:-100px;
+}
+
+.glow-two{
+  background:#00cfff;
+  bottom:5%;
+  right:-100px;
+}
+
+.container{
+  width:100%;
+  max-width:600px;
+  margin:auto;
+  padding:25px 19px 40px;
+  position:relative;
+  z-index:1;
+}
+
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:38px;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:11px;
+}
+
+.logo{
+  width:45px;
+  height:45px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:14px;
+  font-size:19px;
+  font-weight:900;
+  color:white;
+  background:linear-gradient(135deg,#8b35ff,#00cfff);
+  box-shadow:0 0 22px #853cff80;
+}
+
+.brand-name{
+  font-size:16px;
+  font-weight:800;
+  letter-spacing:1.2px;
+}
+
+.brand-sub{
+  font-size:9px;
+  color:#aaa3c7;
+  letter-spacing:3px;
+  margin-top:4px;
+}
+
+.status{
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:#00ffae;
+  box-shadow:0 0 12px #00ffae;
+}
+
+.welcome{
+  padding:29px 23px;
+  min-height:225px;
+  border:1px solid #9d72ff45;
+  border-radius:25px;
+  background:linear-gradient(135deg,#241541c9,#101b35c9);
+  box-shadow:0 12px 40px #0005,inset 0 0 25px #8d4dff12;
+  position:relative;
+  overflow:hidden;
+}
+
+.welcome::after{
+  content:"";
+  position:absolute;
+  width:170px;
+  height:170px;
+  border:1px solid #a56aff35;
+  border-radius:50%;
+  right:-65px;
+  top:35px;
+  box-shadow:0 0 35px #8c42ff30,inset 0 0 35px #8c42ff20;
+}
+
+.welcome-label{
+  color:#b99aff;
+  font-size:10px;
+  font-weight:bold;
+  letter-spacing:3px;
+  margin-bottom:18px;
+}
+
+.welcome h1{
+  font-size:29px;
+  line-height:1.2;
+  font-weight:900;
+  letter-spacing:.5px;
+}
+
+.welcome h1 span{
+  background:linear-gradient(90deg,#b77aff,#00dcff);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+
+.welcome p{
+  color:#b6b0cc;
+  font-size:12px;
+  line-height:1.7;
+  margin-top:13px;
+  max-width:260px;
+}
+
+.section-title{
+  margin:34px 2px 15px;
+  font-size:12px;
+  letter-spacing:2.5px;
+  color:#aaa2c4;
+  font-weight:bold;
+}
+
+.visual-panel{
+  height:180px;
+  border-radius:23px;
+  border:1px solid #00cfff35;
+  background:linear-gradient(145deg,#101d32,#17102b);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 10px 35px #0004;
+}
+
+.visual-ring{
+  width:115px;
+  height:115px;
+  border-radius:50%;
+  border:1px solid #00d9ff80;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 0 25px #00cfff30,inset 0 0 25px #00cfff20;
+  animation:pulse 3s ease-in-out infinite;
+}
+
+.visual-ring::before{
+  content:"";
+  position:absolute;
+  width:85px;
+  height:85px;
+  border:1px solid #a855f780;
+  border-radius:50%;
+}
+
+.visual-text{
+  font-size:23px;
+  font-weight:900;
+  letter-spacing:3px;
+  background:linear-gradient(90deg,#a76bff,#00dfff);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+
+.footer{
+  text-align:center;
+  margin-top:38px;
+  color:#716b8b;
+  font-size:9px;
+  letter-spacing:2px;
+}
+
+@keyframes pulse{
+  0%,100%{transform:scale(1);opacity:.8}
+  50%{transform:scale(1.06);opacity:1}
+}
+
+@media(max-width:380px){
+  .welcome h1{font-size:25px}
+  .container{padding:20px 15px 35px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="background-glow glow-one"></div>
+<div class="background-glow glow-two"></div>
+
+<main class="container">
+
+  <header class="header">
+    <div class="brand">
+      <div class="logo">NX</div>
+      <div>
+        <div class="brand-name">NETHA X</div>
+        <div class="brand-sub">ULTIMATE</div>
+      </div>
+    </div>
+    <div class="status"></div>
+  </header>
+
+  <section class="welcome">
+    <div class="welcome-label">WELCOME</div>
+    <h1>WELCOME TO<br><span>NETHA X</span></h1>
+    <p>Your next-level digital experience starts here.</p>
+  </section>
+
+  <div class="section-title">YOUR EXPERIENCE</div>
+
+  <section class="visual-panel">
+    <div class="visual-ring">
+      <div class="visual-text">NX</div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    NETHA X ULTIMATE • VERSION 1.0
+  </footer>
+
+</main>
+
+</body>
+</html>
