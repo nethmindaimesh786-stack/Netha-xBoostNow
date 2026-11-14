@@ -43,11 +43,12 @@ class MainActivity : Activity() {
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
     private var pendingCameraRequest: PermissionRequest? = null
 
-    // Initialize ML Kit only when required.
     private var textRecognizer: TextRecognizer? = null
     private var languageIdentifier: LanguageIdentifier? = null
 
     private val translationExecutor = Executors.newSingleThreadExecutor()
+
+    private val translationStateLock = Any()
 
     @Volatile
     private var lastProcessedText = ""
@@ -59,8 +60,8 @@ class MainActivity : Activity() {
     private var lastTranslation = ""
 
     @Volatile
-private var activeTranslationSessionId = 0
-   
+    private var activeTranslationSessionId = 0
+
     @Volatile
     private var isActivityDestroyed = false
 
@@ -69,6 +70,20 @@ private var activeTranslationSessionId = 0
         private const val CAMERA_PERMISSION_REQUEST_CODE = 2001
         private const val MAX_FRAME_BASE64_LENGTH = 5_000_000
         private const val MAX_TRANSLATION_BYTES = 450
+    }
+
+    private fun isActiveSession(sessionId: Int): Boolean {
+        return !isActivityDestroyed &&
+            activeTranslationSessionId == sessionId
+    }
+
+    private fun resetTranslationState(sessionId: Int) {
+        synchronized(translationStateLock) {
+            activeTranslationSessionId = sessionId
+            lastProcessedText = ""
+            lastDetectedLanguage = ""
+            lastTranslation = ""
+        }
     }
 
     private fun getTextRecognizer(): TextRecognizer {
@@ -85,6 +100,15 @@ private var activeTranslationSessionId = 0
             .also {
                 languageIdentifier = it
             }
+    }
+
+    private fun recycleBitmap(bitmap: Bitmap?) {
+        try {
+            if (bitmap != null && !bitmap.isRecycled) {
+                bitmap.recycle()
+            }
+        } catch (_: Exception) {
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -129,7 +153,6 @@ private var activeTranslationSessionId = 0
             ): Boolean {
                 val uri = request?.url ?: return true
 
-                // Keep the JavaScript bridge inside the local app origin.
                 return !(
                     uri.scheme == "https" &&
                     uri.host == "appassets.androidplatform.net"
@@ -236,7 +259,6 @@ private var activeTranslationSessionId = 0
         )
     }
 
-    // Camera Permission Result
     @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -271,16 +293,13 @@ private var activeTranslationSessionId = 0
 
     inner class AndroidBridge {
 
-// Reset previous translation when camera starts again
-@JavascriptInterface
-fun resetTranslation(sessionId: Int) {
-    activeTranslationSessionId = sessionId
+        // Reset translation and activate a new camera session.
+        @JavascriptInterface
+        fun resetTranslation(sessionId: Int) {
+            resetTranslationState(sessionId)
+        }
 
-    lastProcessedText = ""
-    lastDetectedLanguage = ""
-    lastTranslation = ""
-}       
-        // Save PNG to Gallery
+        // Save PNG to Gallery.
         @JavascriptInterface
         fun saveImage(dataUrl: String) {
 
@@ -382,11 +401,14 @@ fun resetTranslation(sessionId: Int) {
             }
         }
 
-        // Receive camera frame from JavaScript for OCR
+        // Receive camera frame and process OCR for a specific session.
         @JavascriptInterface
-        fun processTranslationFrame(dataUrl: String) {
+        fun processTranslationFrame(
+            dataUrl: String,
+            sessionId: Int
+        ) {
 
-            if (isActivityDestroyed) return
+            if (!isActiveSession(sessionId)) return
 
             var bitmap: Bitmap? = null
 
@@ -402,7 +424,8 @@ fun resetTranslation(sessionId: Int) {
                         "",
                         "",
                         "",
-                        "Invalid camera frame"
+                        "Invalid camera frame",
+                        sessionId
                     )
                     return
                 }
@@ -412,55 +435,91 @@ fun resetTranslation(sessionId: Int) {
                     Base64.DEFAULT
                 )
 
+                if (!isActiveSession(sessionId)) return
+
                 bitmap = BitmapFactory.decodeByteArray(
                     imageBytes,
                     0,
                     imageBytes.size
                 ) ?: throw Exception("Cannot read camera frame")
 
-                val inputImage = InputImage.fromBitmap(bitmap, 0)
+                val frameBitmap = bitmap
+                val inputImage = InputImage.fromBitmap(frameBitmap, 0)
 
                 getTextRecognizer()
                     .process(inputImage)
                     .addOnSuccessListener { visionText ->
 
-                        val detectedText = visionText.text.trim()
-
-                        // OCR has finished using this bitmap.
-                        bitmap?.let {
-                            if (!it.isRecycled) it.recycle()
-                        }
+                        recycleBitmap(frameBitmap)
                         bitmap = null
+
+                        if (!isActiveSession(sessionId)) return@addOnSuccessListener
+
+                        val detectedText = visionText.text.trim()
 
                         if (detectedText.isBlank()) {
                             sendTCResult(
                                 "",
                                 "",
                                 "",
-                                "Looking for text..."
+                                "Looking for text...",
+                                sessionId
                             )
                             return@addOnSuccessListener
                         }
 
-                        // Important: always respond to repeated frames.
-                        // Otherwise JavaScript may remain locked in processing state.
-                        if (detectedText == lastProcessedText) {
+                        val isUnchanged = synchronized(translationStateLock) {
+
+                            if (
+                                activeTranslationSessionId != sessionId ||
+                                isActivityDestroyed
+                            ) {
+                                return@synchronized false
+                            }
+
+                            detectedText == lastProcessedText
+                        }
+
+                        if (!isActiveSession(sessionId)) {
+                            return@addOnSuccessListener
+                        }
+
+                        if (isUnchanged) {
                             sendTCResult(
                                 detectedText,
                                 "unchanged",
                                 "",
-                                "Text detected — no change"
+                                "Text detected — no change",
+                                sessionId
                             )
                             return@addOnSuccessListener
                         }
 
-                        lastProcessedText = detectedText
-                        lastDetectedLanguage = ""
-                        lastTranslation = ""
+                        synchronized(translationStateLock) {
+
+                            if (
+                                activeTranslationSessionId != sessionId ||
+                                isActivityDestroyed
+                            ) {
+                                return@synchronized
+                            }
+
+                            lastProcessedText = detectedText
+                            lastDetectedLanguage = ""
+                            lastTranslation = ""
+                        }
+
+                        if (!isActiveSession(sessionId)) {
+                            return@addOnSuccessListener
+                        }
 
                         getLanguageIdentifier()
                             .identifyLanguage(detectedText)
                             .addOnSuccessListener { languageCode ->
+
+                                if (!isActiveSession(sessionId)) {
+                                    return@addOnSuccessListener
+                                }
 
                                 if (
                                     languageCode == "und" ||
@@ -470,64 +529,92 @@ fun resetTranslation(sessionId: Int) {
                                         detectedText,
                                         "Unknown",
                                         "",
-                                        "Language could not be detected"
+                                        "Language could not be detected",
+                                        sessionId
                                     )
                                     return@addOnSuccessListener
                                 }
 
-                                lastDetectedLanguage = languageCode
+                                synchronized(translationStateLock) {
+
+                                    if (
+                                        activeTranslationSessionId != sessionId ||
+                                        isActivityDestroyed
+                                    ) {
+                                        return@synchronized
+                                    }
+
+                                    lastDetectedLanguage = languageCode
+                                }
+
+                                if (!isActiveSession(sessionId)) {
+                                    return@addOnSuccessListener
+                                }
 
                                 translateToSinhala(
                                     detectedText,
-                                    languageCode
+                                    languageCode,
+                                    sessionId
                                 )
                             }
                             .addOnFailureListener {
+
+                                if (!isActiveSession(sessionId)) {
+                                    return@addOnFailureListener
+                                }
 
                                 sendTCResult(
                                     detectedText,
                                     "Unknown",
                                     "",
-                                    "Language detection failed"
+                                    "Language detection failed",
+                                    sessionId
                                 )
                             }
                     }
                     .addOnFailureListener { error ->
 
-                        bitmap?.let {
-                            if (!it.isRecycled) it.recycle()
-                        }
+                        recycleBitmap(frameBitmap)
                         bitmap = null
+
+                        if (!isActiveSession(sessionId)) {
+                            return@addOnFailureListener
+                        }
 
                         sendTCResult(
                             "",
                             "",
                             "",
-                            "OCR error: ${error.message ?: "Try again"}"
+                            "OCR error: ${error.message ?: "Try again"}",
+                            sessionId
                         )
                     }
 
             } catch (e: Exception) {
 
-                bitmap?.let {
-                    if (!it.isRecycled) it.recycle()
-                }
+                recycleBitmap(bitmap)
+
+                if (!isActiveSession(sessionId)) return
 
                 sendTCResult(
                     "",
                     "",
                     "",
-                    "Frame error: ${e.message ?: "Try again"}"
+                    "Frame error: ${e.message ?: "Try again"}",
+                    sessionId
                 )
             }
         }
     }
 
-    // Translate detected text into Sinhala using MyMemory
+    // Translate detected text into Sinhala using MyMemory.
     private fun translateToSinhala(
         originalText: String,
-        detectedLanguage: String
+        detectedLanguage: String,
+        sessionId: Int
     ) {
+
+        if (!isActiveSession(sessionId)) return
 
         val sourceLanguage = detectedLanguage
             .substringBefore("-")
@@ -535,13 +622,24 @@ fun resetTranslation(sessionId: Int) {
 
         if (sourceLanguage == "si") {
 
-            lastTranslation = originalText
+            synchronized(translationStateLock) {
+
+                if (
+                    activeTranslationSessionId != sessionId ||
+                    isActivityDestroyed
+                ) {
+                    return
+                }
+
+                lastTranslation = originalText
+            }
 
             sendTCResult(
                 originalText,
                 detectedLanguage,
                 originalText,
-                "Text is already in Sinhala"
+                "Text is already in Sinhala",
+                sessionId
             )
             return
         }
@@ -550,9 +648,10 @@ fun resetTranslation(sessionId: Int) {
 
             translationExecutor.execute {
 
+                if (!isActiveSession(sessionId)) return@execute
+
                 try {
 
-                    // Do not silently translate only part of the text.
                     val textBytes = originalText.toByteArray(Charsets.UTF_8)
 
                     if (textBytes.size > MAX_TRANSLATION_BYTES) {
@@ -592,7 +691,15 @@ fun resetTranslation(sessionId: Int) {
 
                     try {
 
+                        if (!isActiveSession(sessionId)) {
+                            return@execute
+                        }
+
                         val responseCode = connection.responseCode
+
+                        if (!isActiveSession(sessionId)) {
+                            return@execute
+                        }
 
                         val responseStream =
                             if (responseCode in 200..299) {
@@ -605,6 +712,10 @@ fun resetTranslation(sessionId: Int) {
                             ?.bufferedReader()
                             ?.use { it.readText() }
                             ?: throw Exception("Empty translation response")
+
+                        if (!isActiveSession(sessionId)) {
+                            return@execute
+                        }
 
                         if (responseCode !in 200..299) {
                             throw Exception(
@@ -645,13 +756,28 @@ fun resetTranslation(sessionId: Int) {
                                 Html.fromHtml(translated).toString()
                             }
 
-                        lastTranslation = cleanTranslation
+                        if (!isActiveSession(sessionId)) {
+                            return@execute
+                        }
+
+                        synchronized(translationStateLock) {
+
+                            if (
+                                activeTranslationSessionId != sessionId ||
+                                isActivityDestroyed
+                            ) {
+                                return@synchronized
+                            }
+
+                            lastTranslation = cleanTranslation
+                        }
 
                         sendTCResult(
                             originalText,
                             detectedLanguage,
                             cleanTranslation,
-                            "Translation complete"
+                            "Translation complete",
+                            sessionId
                         )
 
                     } finally {
@@ -660,46 +786,64 @@ fun resetTranslation(sessionId: Int) {
 
                 } catch (e: Exception) {
 
+                    if (!isActiveSession(sessionId)) {
+                        return@execute
+                    }
+
                     sendTCResult(
                         originalText,
                         detectedLanguage,
                         "",
-                        "Translation failed: ${e.message ?: "Check internet connection"}"
+                        "Translation failed: ${e.message ?: "Check internet connection"}",
+                        sessionId
                     )
                 }
             }
 
         } catch (e: Exception) {
 
+            if (!isActiveSession(sessionId)) return
+
             sendTCResult(
                 originalText,
                 detectedLanguage,
                 "",
-                "Translation failed: ${e.message ?: "Please try again"}"
+                "Translation failed: ${e.message ?: "Please try again"}",
+                sessionId
             )
         }
     }
 
-    // Send OCR and translation results to the webpage
+    // Send results only if the original camera session is still active.
     private fun sendTCResult(
         text: String,
         language: String,
         translation: String,
-        status: String
+        status: String,
+        sessionId: Int
     ) {
 
-        if (isActivityDestroyed || !::webView.isInitialized) return
+        if (!isActiveSession(sessionId) || !::webView.isInitialized) {
+            return
+        }
 
         val result = JSONObject().apply {
             put("text", text)
             put("language", language)
             put("translation", translation)
             put("status", status)
+            put("sessionId", sessionId)
         }
 
         runOnUiThread {
 
-            if (isActivityDestroyed) return@runOnUiThread
+            if (!isActiveSession(sessionId)) {
+                return@runOnUiThread
+            }
+
+            if (!::webView.isInitialized) {
+                return@runOnUiThread
+            }
 
             webView.evaluateJavascript(
                 "window.onTCNativeResult && " +
@@ -709,7 +853,6 @@ fun resetTranslation(sessionId: Int) {
         }
     }
 
-    // Existing File Picker Result
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(
         requestCode: Int,
@@ -736,7 +879,6 @@ fun resetTranslation(sessionId: Int) {
         }
     }
 
-    // Back Button
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
 
@@ -751,6 +893,13 @@ fun resetTranslation(sessionId: Int) {
 
         isActivityDestroyed = true
 
+        synchronized(translationStateLock) {
+            activeTranslationSessionId++
+            lastProcessedText = ""
+            lastDetectedLanguage = ""
+            lastTranslation = ""
+        }
+
         try {
             pendingCameraRequest?.deny()
         } catch (_: Exception) {
@@ -763,7 +912,6 @@ fun resetTranslation(sessionId: Int) {
 
         translationExecutor.shutdownNow()
 
-        // Close only the ML Kit clients that were actually initialized.
         textRecognizer?.close()
         textRecognizer = null
 
