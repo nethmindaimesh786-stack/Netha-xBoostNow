@@ -26,5 +26,12 @@ android {
 }
 
 dependencies {
+    // Existing WebView support
     implementation("androidx.webkit:webkit:1.14.0")
+
+    // ML Kit Text Recognition (OCR)
+    implementation("com.google.mlkit:text-recognition:16.0.1")
+
+    // ML Kit Language Identification
+    implementation("com.google.mlkit:language-id:17.0.6")
 }
