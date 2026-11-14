@@ -14,12 +14,35 @@ import android.webkit.WebChromeClient
 import android.webkit.ValueCallback
 import android.webkit.JavascriptInterface
 import android.widget.Toast
+import android.Manifest
+import android.content.pm.PackageManager
+import android.webkit.PermissionRequest
+import android.webkit.WebChromeClient
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 
 class MainActivity : Activity() {
 
     private lateinit var webView: WebView
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
+private var pendingCameraRequest: PermissionRequest? = null
 
+private val cameraPermissionLauncher =
+    registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+
+        val request = pendingCameraRequest
+        pendingCameraRequest = null
+
+        if (granted) {
+            request?.grant(
+                arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE)
+            )
+        } else {
+            request?.deny()
+        }
+    }
     companion object {
         private const val FILE_CHOOSER_REQUEST_CODE = 1001
     }
