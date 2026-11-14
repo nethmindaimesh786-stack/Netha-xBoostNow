@@ -5,10 +5,12 @@ import android.app.Activity
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
+import android.text.Html
 import android.util.Base64
 import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
@@ -20,6 +22,15 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.webkit.WebViewAssetLoader
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.google.mlkit.nl.languageid.LanguageIdentification
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLEncoder
+import java.util.concurrent.Executors
 
 class MainActivity : Activity() {
 
@@ -28,6 +39,22 @@ class MainActivity : Activity() {
 
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
     private var pendingCameraRequest: PermissionRequest? = null
+
+    private val textRecognizer by lazy {
+        TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    }
+
+    private val languageIdentifier by lazy {
+        LanguageIdentification.getClient()
+    }
+
+    private val translationExecutor = Executors.newSingleThreadExecutor()
+
+    @Volatile
+    private var lastProcessedText = ""
+
+    @Volatile
+    private var isActivityDestroyed = false
 
     companion object {
         private const val FILE_CHOOSER_REQUEST_CODE = 1001
@@ -42,7 +69,6 @@ class MainActivity : Activity() {
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
 
-        // Load local HTML through a secure app asset URL
         assetLoader = WebViewAssetLoader.Builder()
             .addPathHandler(
                 "/assets/",
@@ -56,7 +82,6 @@ class MainActivity : Activity() {
                 view: WebView?,
                 request: WebResourceRequest?
             ): WebResourceResponse? {
-
                 return request?.url?.let {
                     assetLoader.shouldInterceptRequest(it)
                 }
@@ -67,25 +92,20 @@ class MainActivity : Activity() {
                 view: WebView?,
                 url: String?
             ): WebResourceResponse? {
-
                 return url?.let {
                     assetLoader.shouldInterceptRequest(Uri.parse(it))
                 }
             }
         }
 
-        // Android Gallery Download Bridge
         webView.addJavascriptInterface(
             AndroidBridge(),
             "AndroidBridge"
         )
 
-        // Camera Permission + Android File Picker
         webView.webChromeClient = object : WebChromeClient() {
 
-            override fun onPermissionRequest(
-                request: PermissionRequest
-            ) {
+            override fun onPermissionRequest(request: PermissionRequest) {
                 runOnUiThread {
 
                     val trustedOrigin =
@@ -120,11 +140,8 @@ class MainActivity : Activity() {
                         )
 
                     } else {
-
                         request.grant(
-                            arrayOf(
-                                PermissionRequest.RESOURCE_VIDEO_CAPTURE
-                            )
+                            arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE)
                         )
                     }
                 }
@@ -140,7 +157,6 @@ class MainActivity : Activity() {
                 }
             }
 
-            // Existing Android File Picker
             override fun onShowFileChooser(
                 webView: WebView?,
                 callback: ValueCallback<Array<Uri>>?,
@@ -181,7 +197,7 @@ class MainActivity : Activity() {
         )
     }
 
-    // Handle Android Camera Permission Result
+    // Camera Permission Result
     @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -205,22 +221,18 @@ class MainActivity : Activity() {
                 grantResults.isNotEmpty() &&
                 grantResults[0] == PackageManager.PERMISSION_GRANTED
             ) {
-
                 request.grant(
-                    arrayOf(
-                        PermissionRequest.RESOURCE_VIDEO_CAPTURE
-                    )
+                    arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE)
                 )
-
             } else {
                 request.deny()
             }
         }
     }
 
-    // Save PNG directly to Android Gallery
     inner class AndroidBridge {
 
+        // Save PNG to Gallery
         @JavascriptInterface
         fun saveImage(dataUrl: String) {
 
@@ -281,10 +293,7 @@ class MainActivity : Activity() {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
 
                         val completedValues = ContentValues().apply {
-                            put(
-                                MediaStore.MediaColumns.IS_PENDING,
-                                0
-                            )
+                            put(MediaStore.MediaColumns.IS_PENDING, 0)
                         }
 
                         contentResolver.update(
@@ -319,6 +328,307 @@ class MainActivity : Activity() {
                     ).show()
                 }
             }
+        }
+
+        // Receive camera frame from JavaScript for OCR
+        @JavascriptInterface
+        fun processTranslationFrame(dataUrl: String) {
+
+            if (isActivityDestroyed) return
+
+            try {
+
+                val base64Data = dataUrl.substringAfter(",", "")
+
+                if (base64Data.isBlank() || base64Data.length > 5_000_000) {
+                    sendTCResult(
+                        "",
+                        "",
+                        "",
+                        "Invalid camera frame"
+                    )
+                    return
+                }
+
+                val imageBytes = Base64.decode(
+                    base64Data,
+                    Base64.DEFAULT
+                )
+
+                val bitmap = BitmapFactory.decodeByteArray(
+                    imageBytes,
+                    0,
+                    imageBytes.size
+                ) ?: throw Exception("Cannot read camera frame")
+
+                val inputImage = InputImage.fromBitmap(bitmap, 0)
+
+                textRecognizer.process(inputImage)
+                    .addOnSuccessListener { visionText ->
+
+                        val detectedText = visionText.text.trim()
+
+                        if (detectedText.isBlank()) {
+                            sendTCResult(
+                                "",
+                                "",
+                                "",
+                                "Looking for text..."
+                            )
+                            bitmap.recycle()
+                            return@addOnSuccessListener
+                        }
+
+                        if (detectedText == lastProcessedText) {
+                            bitmap.recycle()
+                            return@addOnSuccessListener
+                        }
+
+                        lastProcessedText = detectedText
+
+                        languageIdentifier.identifyLanguage(detectedText)
+                            .addOnSuccessListener { languageCode ->
+
+                                if (
+                                    languageCode == "und" ||
+                                    languageCode.isBlank()
+                                ) {
+                                    sendTCResult(
+                                        detectedText,
+                                        "Unknown",
+                                        "",
+                                        "Language could not be detected"
+                                    )
+                                    bitmap.recycle()
+                                    return@addOnSuccessListener
+                                }
+
+                                translateToSinhala(
+                                    detectedText,
+                                    languageCode
+                                )
+                            }
+                            .addOnFailureListener {
+                                sendTCResult(
+                                    detectedText,
+                                    "Unknown",
+                                    "",
+                                    "Language detection failed"
+                                )
+                            }
+
+                        bitmap.recycle()
+                    }
+                    .addOnFailureListener { error ->
+
+                        bitmap.recycle()
+
+                        sendTCResult(
+                            "",
+                            "",
+                            "",
+                            "OCR error: ${error.message ?: "Try again"}"
+                        )
+                    }
+
+            } catch (e: Exception) {
+
+                sendTCResult(
+                    "",
+                    "",
+                    "",
+                    "Frame error: ${e.message ?: "Try again"}"
+                )
+            }
+        }
+    }
+
+    // Translate detected text into Sinhala using MyMemory
+    private fun translateToSinhala(
+        originalText: String,
+        detectedLanguage: String
+    ) {
+
+        val sourceLanguage = detectedLanguage
+            .substringBefore("-")
+            .lowercase()
+
+        if (sourceLanguage == "si") {
+            sendTCResult(
+                originalText,
+                detectedLanguage,
+                originalText,
+                "Text is already in Sinhala"
+            )
+            return
+        }
+
+        translationExecutor.execute {
+
+            try {
+
+                val textToTranslate = limitUtf8Bytes(
+                    originalText,
+                    450
+                )
+
+                val encodedText = URLEncoder.encode(
+                    textToTranslate,
+                    "UTF-8"
+                )
+
+                val languagePair = "$sourceLanguage|si"
+
+                val encodedPair = URLEncoder.encode(
+                    languagePair,
+                    "UTF-8"
+                )
+
+                val url = URL(
+                    "https://api.mymemory.translated.net/get" +
+                    "?q=$encodedText&langpair=$encodedPair"
+                )
+
+                val connection = url.openConnection()
+                    as HttpURLConnection
+
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
+                connection.setRequestProperty(
+                    "User-Agent",
+                    "NETHA-X-ULTIMATE"
+                )
+
+                try {
+
+                    val responseCode = connection.responseCode
+
+                    val responseStream =
+                        if (responseCode in 200..299) {
+                            connection.inputStream
+                        } else {
+                            connection.errorStream
+                        }
+
+                    val response = responseStream
+                        ?.bufferedReader()
+                        ?.use { it.readText() }
+                        ?: throw Exception("Empty translation response")
+
+                    if (responseCode !in 200..299) {
+                        throw Exception("Translation service error: $responseCode")
+                    }
+
+                    val json = JSONObject(response)
+
+                    val responseStatus = json.optInt(
+                        "responseStatus",
+                        0
+                    )
+
+                    if (responseStatus != 200) {
+                        throw Exception(
+                            json.optString(
+                                "responseDetails",
+                                "Translation unavailable"
+                            )
+                        )
+                    }
+
+                    val translated = json
+                        .optJSONObject("responseData")
+                        ?.optString("translatedText", "")
+                        ?.takeIf { it.isNotBlank() }
+                        ?: throw Exception("No translated text returned")
+
+                    val cleanTranslation =
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            Html.fromHtml(
+                                translated,
+                                Html.FROM_HTML_MODE_LEGACY
+                            ).toString()
+                        } else {
+                            @Suppress("DEPRECATION")
+                            Html.fromHtml(translated).toString()
+                        }
+
+                    sendTCResult(
+                        originalText,
+                        detectedLanguage,
+                        cleanTranslation,
+                        "Translation complete"
+                    )
+
+                } finally {
+                    connection.disconnect()
+                }
+
+            } catch (e: Exception) {
+
+                sendTCResult(
+                    originalText,
+                    detectedLanguage,
+                    "",
+                    "Translation failed: ${e.message ?: "Check internet connection"}"
+                )
+            }
+        }
+    }
+
+    // Keep MyMemory request below its text-size limit
+    private fun limitUtf8Bytes(
+        text: String,
+        maxBytes: Int
+    ): String {
+
+        val result = StringBuilder()
+        var currentBytes = 0
+
+        for (character in text) {
+
+            val characterString = character.toString()
+            val characterBytes = characterString
+                .toByteArray(Charsets.UTF_8)
+                .size
+
+            if (currentBytes + characterBytes > maxBytes) {
+                break
+            }
+
+            result.append(character)
+            currentBytes += characterBytes
+        }
+
+        return result.toString()
+    }
+
+    // Send OCR and translation results to the webpage
+    private fun sendTCResult(
+        text: String,
+        language: String,
+        translation: String,
+        status: String
+    ) {
+
+        if (isActivityDestroyed || !::webView.isInitialized) return
+
+        val result = JSONObject().apply {
+            put("text", text)
+            put("language", language)
+            put("translation", translation)
+            put("status", status)
+        }
+
+        runOnUiThread {
+
+            if (isActivityDestroyed) return@runOnUiThread
+
+            webView.evaluateJavascript(
+                "window.onTCNativeResult && " +
+                "window.onTCNativeResult(${result});",
+                null
+            )
         }
     }
 
@@ -362,15 +672,25 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
 
+        isActivityDestroyed = true
+
         pendingCameraRequest?.deny()
         pendingCameraRequest = null
 
         filePathCallback?.onReceiveValue(null)
         filePathCallback = null
 
+        translationExecutor.shutdownNow()
+
         if (::webView.isInitialized) {
             webView.stopLoading()
+            webView.removeJavascriptInterface("AndroidBridge")
             webView.destroy()
+        }
+
+        if (::webView.isInitialized) {
+            textRecognizer.close()
+            languageIdentifier.close()
         }
 
         super.onDestroy()
