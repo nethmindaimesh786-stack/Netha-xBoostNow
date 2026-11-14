@@ -1,3 +1,4 @@
+HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -688,8 +689,215 @@ text-align:center
 .mo-title{font-size:16px}
 }
 
+/* PREMIUM ULTRA GLOW CLEANING ANIMATION */
+
+.mo-clean-animation{
+display:none;
+min-height:205px;
+margin-top:17px;
+border:1px solid rgba(0,217,255,.3);
+border-radius:18px;
+background:radial-gradient(circle at center,#182448 0%,#0b1020 65%);
+align-items:center;
+justify-content:center;
+flex-direction:column;
+position:relative;
+overflow:hidden
+}
+
+.mo-clean-animation.active{
+display:flex
+}
+
+.mo-energy-core{
+width:105px;
+height:105px;
+position:relative;
+display:flex;
+align-items:center;
+justify-content:center;
+border-radius:50%;
+background:radial-gradient(circle,#182d50 0%,#11172e 60%,transparent 72%);
+box-shadow:0 0 20px #00d9ff45,0 0 40px #9b5cff30
+}
+
+.mo-energy-core::before,
+.mo-energy-core::after{
+content:"";
+position:absolute;
+inset:0;
+border-radius:50%;
+border:2px solid transparent;
+border-top-color:#35eaff;
+border-bottom-color:#a855f7;
+animation:moCoreSpin 2.2s linear infinite
+}
+
+.mo-energy-core::after{
+inset:9px;
+border-top-color:#a855f7;
+border-bottom-color:#35eaff;
+animation:moCoreSpin 1.5s linear infinite reverse
+}
+
+.mo-energy-icon{
+font-size:35px;
+filter:drop-shadow(0 0 9px #35eaff);
+animation:moIconPulse 1.5s ease-in-out infinite
+}
+
+.mo-energy-ring{
+position:absolute;
+width:135px;
+height:135px;
+border:1px solid #35eaff70;
+border-radius:50%;
+box-shadow:0 0 15px #00d9ff25;
+animation:moOuterSpin 4s linear infinite
+}
+
+.mo-energy-ring::before{
+content:"";
+position:absolute;
+width:7px;
+height:7px;
+border-radius:50%;
+background:#35eaff;
+box-shadow:0 0 12px #35eaff;
+top:13px;
+left:18px
+}
+
+.mo-scan-beam{
+position:absolute;
+width:125px;
+height:2px;
+background:linear-gradient(90deg,transparent,#35eaff,white,#a855f7,transparent);
+box-shadow:0 0 12px #35eaff;
+animation:moScan 2s ease-in-out infinite
+}
+
+.mo-clean-title{
+margin-top:24px;
+font-size:11px;
+font-weight:900;
+letter-spacing:2px;
+color:#35eaff;
+text-shadow:0 0 12px #00d9ff80;
+text-align:center
+}
+
+.mo-clean-subtitle{
+margin-top:8px;
+font-size:10px;
+color:#a9b7d0;
+text-align:center;
+padding:0 12px;
+line-height:1.5
+}
+
+.mo-progress-track{
+width:78%;
+height:4px;
+margin-top:16px;
+border-radius:20px;
+background:#27344d;
+overflow:hidden
+}
+
+.mo-progress-bar{
+width:35%;
+height:100%;
+border-radius:20px;
+background:linear-gradient(90deg,#9b5cff,#35eaff);
+box-shadow:0 0 12px #35eaff;
+animation:moProgress 1.4s ease-in-out infinite
+}
+
+.mo-clean-animation.success .mo-energy-core{
+box-shadow:0 0 25px #00ffae65,0 0 55px #00ffae35
+}
+
+.mo-clean-animation.success .mo-energy-core::before,
+.mo-clean-animation.success .mo-energy-core::after,
+.mo-clean-animation.success .mo-energy-ring,
+.mo-clean-animation.success .mo-scan-beam,
+.mo-clean-animation.success .mo-progress-bar{
+animation:none
+}
+
+.mo-clean-animation.success .mo-energy-core::before,
+.mo-clean-animation.success .mo-energy-core::after{
+border-color:#00ffae
+}
+
+.mo-clean-animation.success .mo-energy-icon{
+animation:none;
+filter:drop-shadow(0 0 12px #00ffae)
+}
+
+.mo-clean-animation.success .mo-clean-title{
+color:#00ffae;
+text-shadow:0 0 12px #00ffae80
+}
+
+.mo-clean-animation.error .mo-energy-core{
+box-shadow:0 0 25px #ff526565
+}
+
+.mo-clean-animation.error .mo-energy-core::before,
+.mo-clean-animation.error .mo-energy-core::after{
+border-color:#ff5265;
+animation:none
+}
+
+.mo-clean-animation.error .mo-energy-icon{
+animation:none;
+filter:drop-shadow(0 0 12px #ff5265)
+}
+
+.mo-clean-animation.error .mo-energy-ring,
+.mo-clean-animation.error .mo-scan-beam{
+animation:none
+}
+
+.mo-clean-animation.error .mo-clean-title{
+color:#ff7180
+}
+
+@keyframes moCoreSpin{
+to{transform:rotate(360deg)}
+}
+
+@keyframes moOuterSpin{
+to{transform:rotate(-360deg)}
+}
+
+@keyframes moIconPulse{
+0%,100%{transform:scale(.92);opacity:.8}
+50%{transform:scale(1.08);opacity:1}
+}
+
+@keyframes moScan{
+0%,100%{transform:translateY(-45px);opacity:.3}
+50%{transform:translateY(45px);opacity:1}
+}
+
+@keyframes moProgress{
+0%{transform:translateX(-110%)}
+100%{transform:translateX(300%)}
+}
+
 @media(prefers-reduced-motion:reduce){
 .visual-ring{animation:none}
+.mo-energy-core::before,
+.mo-energy-core::after,
+.mo-energy-ring,
+.mo-energy-icon,
+.mo-scan-beam,
+.mo-progress-bar{
+animation:none!important
+}
 }
 
 </style>
@@ -861,6 +1069,30 @@ text-align:center
       </div>
     </div>
 
+    <!-- PREMIUM ULTRA GLOW CLEANING ANIMATION -->
+
+    <div class="mo-clean-animation" id="moCleanAnimation">
+
+      <div class="mo-energy-core">
+        <div class="mo-energy-ring"></div>
+        <div class="mo-scan-beam"></div>
+        <div class="mo-energy-icon" id="moEnergyIcon">⚡</div>
+      </div>
+
+      <div class="mo-clean-title" id="moCleanTitle">
+        INITIALIZING CLEANER
+      </div>
+
+      <div class="mo-clean-subtitle" id="moCleanSubtitle">
+        Connecting to Android system...
+      </div>
+
+      <div class="mo-progress-track" id="moProgressTrack">
+        <div class="mo-progress-bar"></div>
+      </div>
+
+    </div>
+
     <div class="mo-info">
       <strong>WHAT THIS TOOL DOES</strong><br>
       Requests Android System permission to clear external app cache directories.<br><br>
@@ -970,18 +1202,30 @@ window.addEventListener("blur", nxReleaseTapTarget);
 
 
 /* =================================
-   MOBILE OPTIMIZER
+   MOBILE OPTIMIZER - ULTRA GLOW
 ================================= */
 
 let moRequestRunning = false;
+
+const moAnimation = document.getElementById("moCleanAnimation");
+const moEnergyIcon = document.getElementById("moEnergyIcon");
+const moCleanTitle = document.getElementById("moCleanTitle");
+const moCleanSubtitle = document.getElementById("moCleanSubtitle");
+const moProgressTrack = document.getElementById("moProgressTrack");
 
 function openMobileOptimizer(){
 
   document.getElementById("mobileOptimizer").style.display = "flex";
 
-  setMobileOptimizerStatus(
-    "Ready. Press START CACHE CLEANING to continue."
-  );
+  if (!moRequestRunning) {
+
+    resetMOAnimation();
+
+    setMobileOptimizerStatus(
+      "Ready. Press START CACHE CLEANING to continue."
+    );
+
+  }
 
 }
 
@@ -997,6 +1241,85 @@ function setMobileOptimizerStatus(message){
 
   if (status) {
     status.textContent = message;
+  }
+
+}
+
+function resetMOAnimation(){
+
+  moAnimation.classList.remove("active","success","error");
+
+  moEnergyIcon.textContent = "⚡";
+
+  moCleanTitle.textContent = "INITIALIZING CLEANER";
+
+  moCleanSubtitle.textContent =
+    "Connecting to Android system...";
+
+  moProgressTrack.style.display = "block";
+
+}
+
+function startMOAnimation(){
+
+  moAnimation.classList.remove("success","error");
+
+  moAnimation.classList.add("active");
+
+  moEnergyIcon.textContent = "⚡";
+
+  moCleanTitle.textContent = "SYSTEM CLEANING";
+
+  moCleanSubtitle.textContent =
+    "Waiting for Android system response...";
+
+  moProgressTrack.style.display = "block";
+
+}
+
+function showMOSuccess(){
+
+  moAnimation.classList.remove("error");
+
+  moAnimation.classList.add("active","success");
+
+  moEnergyIcon.textContent = "✓";
+
+  moCleanTitle.textContent = "CLEANING COMPLETED";
+
+  moCleanSubtitle.textContent =
+    "Android reported that cache cleanup completed.";
+
+  moProgressTrack.style.display = "none";
+
+}
+
+function showMOError(){
+
+  moAnimation.classList.remove("success");
+
+  moAnimation.classList.add("active","error");
+
+  moEnergyIcon.textContent = "!";
+
+  moCleanTitle.textContent = "CLEANING NOT CONFIRMED";
+
+  moCleanSubtitle.textContent =
+    "Android did not confirm cache cleanup.";
+
+  moProgressTrack.style.display = "none";
+
+}
+
+function finishMORequest(){
+
+  moRequestRunning = false;
+
+  const button = document.getElementById("moBoostButton");
+
+  if (button) {
+    button.disabled = false;
+    button.textContent = "⚡ START CACHE CLEANING";
   }
 
 }
@@ -1027,9 +1350,14 @@ function startMobileBoost(){
     button.textContent = "PLEASE WAIT...";
   }
 
+  startMOAnimation();
+
   setMobileOptimizerStatus(
     "Connecting to Android System Cache Cleaner..."
   );
+
+  moCleanSubtitle.textContent =
+    "Requesting Android system permission...";
 
   try {
 
@@ -1037,12 +1365,9 @@ function startMobileBoost(){
 
   } catch(error) {
 
-    moRequestRunning = false;
+    finishMORequest();
 
-    if (button) {
-      button.disabled = false;
-      button.textContent = "⚡ START CACHE CLEANING";
-    }
+    showMOError();
 
     setMobileOptimizerStatus(
       "Unable to start: " + (error.message || "Unknown error")
@@ -1057,16 +1382,11 @@ function startMobileBoost(){
 
 window.onCacheClearStatus = function(result){
 
-  moRequestRunning = false;
-
-  const button = document.getElementById("moBoostButton");
-
-  if (button) {
-    button.disabled = false;
-    button.textContent = "⚡ START CACHE CLEANING";
-  }
-
   if (!result) {
+
+    finishMORequest();
+
+    showMOError();
 
     setMobileOptimizerStatus(
       "Android returned an empty response. Please try again."
@@ -1076,40 +1396,105 @@ window.onCacheClearStatus = function(result){
 
   }
 
-  /* Support plain text responses */
+  /* SUPPORT PLAIN TEXT RESPONSES */
 
   if (typeof result === "string") {
 
     setMobileOptimizerStatus(result);
 
-    return;
+    const lowerMessage = result.toLowerCase();
 
-  }
+    /*
+      Keep animation active when Android has only opened
+      its confirmation screen.
+    */
 
-  /* Read the JSON object sent by Kotlin */
+    if (
+      lowerMessage.includes("confirmation opened") ||
+      lowerMessage.includes("confirmation screen")
+    ) {
 
-  if (typeof result === "object") {
+      moCleanTitle.textContent = "AWAITING CONFIRMATION";
 
-    const message =
-      typeof result.status === "string"
-        ? result.status
-        : "Android returned an unknown response.";
+      moCleanSubtitle.textContent =
+        "Complete the Android system confirmation to continue.";
 
-    setMobileOptimizerStatus(message);
+      return;
 
-    if (result.success === true) {
-      console.log("Mobile Optimizer: Android reported success.");
-    } else {
-      console.log("Mobile Optimizer: Further action may be required.");
     }
 
+    finishMORequest();
+
+    showMOError();
+
     return;
 
   }
 
-  setMobileOptimizerStatus(
-    "Unable to read Android cache cleaner response."
-  );
+  if (typeof result !== "object") {
+
+    finishMORequest();
+
+    showMOError();
+
+    setMobileOptimizerStatus(
+      "Unable to read Android cache cleaner response."
+    );
+
+    return;
+
+  }
+
+  const message =
+    typeof result.status === "string"
+      ? result.status
+      : "Android returned an unknown response.";
+
+  setMobileOptimizerStatus(message);
+
+  const lowerMessage = message.toLowerCase();
+
+  /*
+    Android first reports that the system confirmation
+    screen has opened. This is not the final result.
+  */
+
+  if (
+    result.success !== true &&
+    (
+      lowerMessage.includes("confirmation opened") ||
+      lowerMessage.includes("confirmation screen")
+    )
+  ) {
+
+    moCleanTitle.textContent = "AWAITING CONFIRMATION";
+
+    moCleanSubtitle.textContent =
+      "Complete the Android system confirmation to continue.";
+
+    return;
+
+  }
+
+  finishMORequest();
+
+  if (result.success === true) {
+
+    showMOSuccess();
+
+    console.log(
+      "Mobile Optimizer: Android reported cache cleanup completed."
+    );
+
+  } else {
+
+    showMOError();
+
+    console.log(
+      "Mobile Optimizer: Android did not confirm cache cleanup."
+    );
+
+  }
 
 };
 
@@ -1534,7 +1919,7 @@ updateTCButtons();
   Use a secure backend for API requests.
 */
 
-const POOF_API_KEY = "pk_72b0ad9635e5e34d2554b77510745212";
+const POOF_API_KEY = "PASTE_YOUR_NEW_POOF_API_KEY_HERE";
 const POOF_API_URL = "https://api.poof.bg/v1/remove";
 
 
