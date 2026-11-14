@@ -273,7 +273,9 @@ private var activeTranslationSessionId = 0
 
 // Reset previous translation when camera starts again
 @JavascriptInterface
-fun resetTranslation() {
+fun resetTranslation(sessionId: Int) {
+    activeTranslationSessionId = sessionId
+
     lastProcessedText = ""
     lastDetectedLanguage = ""
     lastTranslation = ""
