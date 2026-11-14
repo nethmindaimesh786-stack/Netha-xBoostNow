@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,532 +7,75 @@
 <title>NETHA X ULTIMATE</title>
 
 <style>
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-}
-
-/* =================================
-   NETHA X GLOBAL BUTTON & CARD SYSTEM
-================================= */
-
-:where(button, a, [onclick], [role="button"], .nx-tap-card){
-  -webkit-tap-highlight-color:transparent;
-  cursor:pointer;
-  touch-action:manipulation;
-  transition:
-    transform .16s cubic-bezier(.2,.8,.2,1),
-    filter .16s ease,
-    box-shadow .16s ease;
-}
-
-/* GLOBAL BUTTON DESIGN */
-button{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:7px;
-
-  min-height:44px;
-  padding:12px 18px !important;
-
-  background:linear-gradient(
-    110deg,
-    #9b5cff,
-    #397dff,
-    #00cfff
-  ) !important;
-
-  color:#ffffff !important;
-  border:1px solid rgba(120,210,255,.65) !important;
-  border-radius:12px !important;
-
-  font-family:Arial,sans-serif !important;
-  font-size:12px !important;
-  font-weight:800 !important;
-  letter-spacing:.7px;
-
-  box-shadow:
-    0 4px 15px rgba(75,100,255,.25),
-    inset 0 1px 0 rgba(255,255,255,.2) !important;
-
-  outline:none;
-  position:relative;
-  overflow:hidden;
-}
-
-/* GLOBAL BUTTON HOVER */
-@media(hover:hover){
-  button:hover{
-    filter:brightness(1.12);
-    box-shadow:
-      0 0 20px rgba(0,207,255,.35),
-      0 0 28px rgba(155,92,255,.2) !important;
-  }
-}
-
-/* GLOBAL TAP */
-:where(button,a,[onclick],[role="button"],.nx-tap-card):active:not(:disabled){
-  transform:scale(.97);
-  filter:brightness(1.16);
-  box-shadow:0 0 18px rgba(155,92,255,.48);
-}
-
-/* Tap target */
-.nx-tap-target{
-  position:relative;
-  overflow:hidden;
-  isolation:isolate;
-}
-
-.nx-tap-target.nx-pressed{
-  transform:scale(.97);
-  filter:brightness(1.15);
-  box-shadow:0 0 18px rgba(155,92,255,.55);
-}
-
-/* Ripple */
-.nx-ripple{
-  position:absolute;
-  border-radius:50%;
-  pointer-events:none;
-  z-index:0;
-  background:radial-gradient(
-    circle,
-    rgba(53,234,255,.38) 0%,
-    rgba(155,92,255,.27) 42%,
-    transparent 72%
-  );
-  transform:scale(.05);
-  animation:nxRippleEffect .55s ease-out forwards;
-}
-
-@keyframes nxRippleEffect{
-  0%{
-    transform:scale(.05);
-    opacity:.85;
-  }
-  100%{
-    transform:scale(1);
-    opacity:0;
-  }
-}
-
-button:disabled{
-  opacity:.55;
-  cursor:not-allowed;
-  filter:grayscale(.5);
-  box-shadow:none !important;
-}
-
-button:focus-visible{
-  outline:2px solid #35eaff;
-  outline-offset:3px;
-}
-
-@media(prefers-reduced-motion:reduce){
-  :where(button,a,[onclick],[role="button"],.nx-tap-card){
-    transition:none;
-  }
-  .nx-ripple{
-    display:none;
-    animation:none;
-  }
-}
-
-/* =================================
-   ORIGINAL NETHA X DESIGN
-================================= */
-
-body{
-  min-height:100vh;
-  font-family:Arial,sans-serif;
-  color:#fff;
-  background:
-    radial-gradient(ellipse at 15% 10%,#24104d 0%,transparent 42%),
-    radial-gradient(ellipse at 90% 80%,#062b45 0%,transparent 42%),
-    #070713;
-  overflow-x:hidden;
-}
-
-.background-glow{
-  position:fixed;
-  width:240px;
-  height:240px;
-  border-radius:50%;
-  filter:blur(100px);
-  opacity:.25;
-  pointer-events:none;
-}
-
-.glow-one{
-  background:#8b35ff;
-  top:5%;
-  left:-100px;
-}
-
-.glow-two{
-  background:#00cfff;
-  bottom:5%;
-  right:-100px;
-}
-
-.container{
-  width:100%;
-  max-width:600px;
-  margin:auto;
-  padding:25px 19px 40px;
-  position:relative;
-  z-index:1;
-}
-
-.header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin-bottom:38px;
-}
-
-.brand{
-  display:flex;
-  align-items:center;
-  gap:11px;
-}
-
-.logo{
-  width:45px;
-  height:45px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:14px;
-  font-size:19px;
-  font-weight:900;
-  color:white;
-  background:linear-gradient(135deg,#8b35ff,#00cfff);
-  box-shadow:0 0 22px #853cff80;
-}
-
-.brand-name{
-  font-size:16px;
-  font-weight:800;
-  letter-spacing:1.2px;
-}
-
-.brand-sub{
-  font-size:9px;
-  color:#aaa3c7;
-  letter-spacing:3px;
-  margin-top:4px;
-}
-
-.status{
-  width:9px;
-  height:9px;
-  border-radius:50%;
-  background:#00ffae;
-  box-shadow:0 0 12px #00ffae;
-}
-
-.welcome{
-  padding:29px 23px;
-  min-height:225px;
-  border:1px solid #9d72ff45;
-  border-radius:25px;
-  background:linear-gradient(135deg,#241541c9,#101b35c9);
-  box-shadow:0 12px 40px #0005,inset 0 0 25px #8d4dff12;
-  position:relative;
-  overflow:hidden;
-}
-
-.welcome::after{
-  content:"";
-  position:absolute;
-  width:170px;
-  height:170px;
-  border:1px solid #a56aff35;
-  border-radius:50%;
-  right:-65px;
-  top:35px;
-  box-shadow:0 0 35px #8c42ff30,inset 0 0 35px #8c42ff20;
-}
-
-.welcome-label{
-  color:#b99aff;
-  font-size:10px;
-  font-weight:bold;
-  letter-spacing:3px;
-  margin-bottom:18px;
-}
-
-.welcome h1{
-  font-size:29px;
-  line-height:1.2;
-  font-weight:900;
-  letter-spacing:.5px;
-}
-
-.welcome h1 span{
-  background:linear-gradient(90deg,#b77aff,#00dcff);
-  -webkit-background-clip:text;
-  background-clip:text;
-  color:transparent;
-}
-
-.welcome p{
-  color:#b6b0cc;
-  font-size:12px;
-  line-height:1.7;
-  margin-top:13px;
-  max-width:260px;
-}
-
-.section-title{
-  margin:34px 2px 15px;
-  font-size:12px;
-  letter-spacing:2.5px;
-  color:#aaa2c4;
-  font-weight:bold;
-}
-
-.visual-panel{
-  height:180px;
-  border-radius:23px;
-  border:1px solid #00cfff35;
-  background:linear-gradient(145deg,#101d32,#17102b);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  position:relative;
-  overflow:hidden;
-  box-shadow:0 10px 35px #0004;
-}
-
-.visual-ring{
-  width:115px;
-  height:115px;
-  border-radius:50%;
-  border:1px solid #00d9ff80;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow:0 0 25px #00cfff30,inset 0 0 25px #00cfff20;
-  animation:pulse 3s ease-in-out infinite;
-}
-
-.visual-ring::before{
-  content:"";
-  position:absolute;
-  width:85px;
-  height:85px;
-  border:1px solid #a855f780;
-  border-radius:50%;
-}
-
-.visual-text{
-  font-size:23px;
-  font-weight:900;
-  letter-spacing:3px;
-  background:linear-gradient(90deg,#a76bff,#00dfff);
-  -webkit-background-clip:text;
-  background-clip:text;
-  color:transparent;
-}
-
-.footer{
-  text-align:center;
-  margin-top:38px;
-  color:#716b8b;
-  font-size:9px;
-  letter-spacing:2px;
-}
-
-@keyframes pulse{
-  0%,100%{transform:scale(1);opacity:.8}
-  50%{transform:scale(1.06);opacity:1}
-}
-
-@media(max-width:380px){
-  .welcome h1{font-size:25px}
-  .container{padding:20px 15px 35px}
-}
-
-/* =====================================
-   NETHA X AUTO PREMIUM GLASS CARD SYSTEM
-===================================== */
-
-.nx-feature-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  width: 100%;
-}
-
-.nx-feature-grid>* {
-  width: 100%;
-  max-width:160px;
-  justify-self: center;
-}
-
-/* AUTO DESIGN FOR EVERY FEATURE CARD */
-
-.nx-feature-grid > *{
-  min-width:0;
-  height:155px;
-  position:relative;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:9px;
-  padding:12px;
-  box-sizing:border-box;
-  text-align:center;
-  background:linear-gradient(
-    145deg,
-    rgba(155,92,255,.13),
-    rgba(0,207,255,.07)
-  ) !important;
-  border:1px solid rgba(155,92,255,.35) !important;
-  border-radius:19px !important;
-  backdrop-filter:blur(14px);
-  -webkit-backdrop-filter:blur(14px);
-  box-shadow:
-    0 8px 25px rgba(0,0,0,.25),
-    inset 0 1px 1px rgba(255,255,255,.07);
-  overflow:hidden;
-  isolation:isolate;
-  color:#fff;
-}
-
-.nx-feature-grid > *::before{
-  content:"";
-  position:absolute;
-  width:100px;
-  height:100px;
-  top:-55px;
-  right:-35px;
-  border-radius:50%;
-  background:#9b5cff;
-  filter:blur(45px);
-  opacity:.22;
-  pointer-events:none;
-}
-
-.nx-feature-grid > *::after{
-  content:"";
-  position:absolute;
-  width:90px;
-  height:90px;
-  bottom:-60px;
-  left:-35px;
-  border-radius:50%;
-  background:#00cfff;
-  filter:blur(40px);
-  opacity:.18;
-  pointer-events:none;
-}
-
-/* ICON */
-
-.nx-feature-icon{
-  width:49px;
-  height:49px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:15px;
-  font-size:25px;
-  background:linear-gradient(
-    145deg,
-    rgba(155,92,255,.25),
-    rgba(0,207,255,.13)
-  );
-  border:1px solid rgba(180,140,255,.3);
-  box-shadow:0 0 18px rgba(155,92,255,.16);
-  position:relative;
-  z-index:1;
-}
-
-/* TITLE */
-
-.nx-feature-grid h3{
-  font-size:12px;
-  font-weight:800;
-  color:#d6c3ff;
-  position:relative;
-  z-index:1;
-  margin:0;
-}
-
-/* DESCRIPTION */
-
-.nx-feature-grid p{
-  font-size:10px;
-  color:#aaa9c1;
-  line-height:1.4;
-  position:relative;
-  z-index:1;
-  margin:0;
-}
-
-/* OPEN LABEL */
-
-.nx-feature-open{
-  font-size:9px;
-  font-weight:bold;
-  letter-spacing:1.2px;
-  color:#35eaff;
-  position:relative;
-  z-index:1;
-}
-
-/* HOVER EFFECT */
-
-@media(hover:hover){
-  .nx-feature-grid > *:hover{
-    border-color:rgba(0,207,255,.55) !important;
-    box-shadow:
-      0 0 22px rgba(0,207,255,.13),
-      0 0 25px rgba(155,92,255,.13);
-  }
-}
-
-/* NETHA X COMPACT FEATURE CARDS */
-
-.nx-feature-grid{
-  gap:12px;
-}
-
-.nx-feature-grid > *{
-  height:155px;
-  padding:10px !important;
-  gap:7px;
-}
-
-.nx-feature-icon{
-  width:43px;
-  height:43px;
-  font-size:22px;
-  border-radius:13px;
-}
-
-.nx-feature-grid h3{
-  font-size:11px;
-}
-
-.nx-feature-grid p{
-  font-size:9px;
-}
-
-.nx-feature-open{
-  font-size:8px;
-}
-/* MOVE ONLY WELCOME CARD */
-.welcome {
-  transform: translateY(-30px);
-}
+*{margin:0;padding:0;box-sizing:border-box}
+:where(button,a,[onclick],[role="button"],.nx-tap-card){-webkit-tap-highlight-color:transparent;cursor:pointer;touch-action:manipulation;transition:transform .16s ease,filter .16s ease,box-shadow .16s ease}
+button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:12px 18px!important;background:linear-gradient(110deg,#9b5cff,#397dff,#00cfff)!important;color:#fff!important;border:1px solid rgba(120,210,255,.65)!important;border-radius:12px!important;font-family:Arial,sans-serif!important;font-size:12px!important;font-weight:800!important;letter-spacing:.7px;box-shadow:0 4px 15px rgba(75,100,255,.25),inset 0 1px 0 rgba(255,255,255,.2)!important;outline:none;position:relative;overflow:hidden}
+@media(hover:hover){button:hover{filter:brightness(1.12);box-shadow:0 0 20px rgba(0,207,255,.35),0 0 28px rgba(155,92,255,.2)!important}}
+:where(button,a,[onclick],[role="button"],.nx-tap-card):active:not(:disabled){transform:scale(.97);filter:brightness(1.16)}
+button:disabled{opacity:.55;cursor:not-allowed;filter:grayscale(.5);box-shadow:none!important}
+button:focus-visible{outline:2px solid #35eaff;outline-offset:3px}
+.nx-tap-target{position:relative;overflow:hidden;isolation:isolate}
+.nx-tap-target.nx-pressed{transform:scale(.97);filter:brightness(1.15);box-shadow:0 0 18px rgba(155,92,255,.55)}
+.nx-ripple{position:absolute;border-radius:50%;pointer-events:none;z-index:0;background:radial-gradient(circle,rgba(53,234,255,.38) 0%,rgba(155,92,255,.27) 42%,transparent 72%);transform:scale(.05);animation:nxRippleEffect .55s ease-out forwards}
+@keyframes nxRippleEffect{0%{transform:scale(.05);opacity:.85}100%{transform:scale(1);opacity:0}}
+@media(prefers-reduced-motion:reduce){:where(button,a,[onclick],[role="button"],.nx-tap-card){transition:none}.nx-ripple{display:none;animation:none}}
+body{min-height:100vh;font-family:Arial,sans-serif;color:#fff;background:radial-gradient(ellipse at 15% 10%,#24104d 0%,transparent 42%),radial-gradient(ellipse at 90% 80%,#062b45 0%,transparent 42%),#070713;overflow-x:hidden}
+.background-glow{position:fixed;width:240px;height:240px;border-radius:50%;filter:blur(100px);opacity:.25;pointer-events:none}
+.glow-one{background:#8b35ff;top:5%;left:-100px}
+.glow-two{background:#00cfff;bottom:5%;right:-100px}
+.container{width:100%;max-width:600px;margin:auto;padding:25px 19px 40px;position:relative;z-index:1}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:38px}
+.brand{display:flex;align-items:center;gap:11px}
+.logo{width:45px;height:45px;display:flex;align-items:center;justify-content:center;border-radius:14px;font-size:19px;font-weight:900;color:white;background:linear-gradient(135deg,#8b35ff,#00cfff);box-shadow:0 0 22px #853cff80}
+.brand-name{font-size:16px;font-weight:800;letter-spacing:1.2px}
+.brand-sub{font-size:9px;color:#aaa3c7;letter-spacing:3px;margin-top:4px}
+.status{width:9px;height:9px;border-radius:50%;background:#00ffae;box-shadow:0 0 12px #00ffae}
+.welcome{padding:29px 23px;min-height:225px;border:1px solid #9d72ff45;border-radius:25px;background:linear-gradient(135deg,#241541c9,#101b35c9);box-shadow:0 12px 40px #0005,inset 0 0 25px #8d4dff12;position:relative;overflow:hidden;transform:translateY(-30px)}
+.welcome::after{content:"";position:absolute;width:170px;height:170px;border:1px solid #a56aff35;border-radius:50%;right:-65px;top:35px;box-shadow:0 0 35px #8c42ff30,inset 0 0 35px #8c42ff20}
+.welcome-label{color:#b99aff;font-size:10px;font-weight:bold;letter-spacing:3px;margin-bottom:18px}
+.welcome h1{font-size:29px;line-height:1.2;font-weight:900;letter-spacing:.5px}
+.welcome h1 span{background:linear-gradient(90deg,#b77aff,#00dcff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.welcome p{color:#b6b0cc;font-size:12px;line-height:1.7;margin-top:13px;max-width:260px}
+.section-title{margin:34px 2px 15px;font-size:12px;letter-spacing:2.5px;color:#aaa2c4;font-weight:bold}
+.visual-panel{height:180px;border-radius:23px;border:1px solid #00cfff35;background:linear-gradient(145deg,#101d32,#17102b);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;box-shadow:0 10px 35px #0004}
+.visual-ring{width:115px;height:115px;border-radius:50%;border:1px solid #00d9ff80;display:flex;align-items:center;justify-content:center;box-shadow:0 0 25px #00cfff30,inset 0 0 25px #00cfff20;animation:pulse 3s ease-in-out infinite}
+.visual-ring::before{content:"";position:absolute;width:85px;height:85px;border:1px solid #a855f780;border-radius:50%}
+.visual-text{font-size:23px;font-weight:900;letter-spacing:3px;background:linear-gradient(90deg,#a76bff,#00dfff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.footer{text-align:center;margin-top:38px;color:#716b8b;font-size:9px;letter-spacing:2px}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.06);opacity:1}}
+@media(max-width:380px){.welcome h1{font-size:25px}.container{padding:20px 15px 35px}}
+.nx-feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%}
+.nx-feature-grid>*{width:100%;max-width:160px;justify-self:center;min-width:0;height:155px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:10px!important;text-align:center;background:linear-gradient(145deg,rgba(155,92,255,.13),rgba(0,207,255,.07))!important;border:1px solid rgba(155,92,255,.35)!important;border-radius:19px!important;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 8px 25px rgba(0,0,0,.25),inset 0 1px 1px rgba(255,255,255,.07);overflow:hidden;isolation:isolate;color:#fff}
+.nx-feature-grid>*::before{content:"";position:absolute;width:100px;height:100px;top:-55px;right:-35px;border-radius:50%;background:#9b5cff;filter:blur(45px);opacity:.22;pointer-events:none}
+.nx-feature-grid>*::after{content:"";position:absolute;width:90px;height:90px;bottom:-60px;left:-35px;border-radius:50%;background:#00cfff;filter:blur(40px);opacity:.18;pointer-events:none}
+.nx-feature-icon{width:43px;height:43px;display:flex;align-items:center;justify-content:center;border-radius:13px;font-size:22px;background:linear-gradient(145deg,rgba(155,92,255,.25),rgba(0,207,255,.13));border:1px solid rgba(180,140,255,.3);box-shadow:0 0 18px rgba(155,92,255,.16);position:relative;z-index:1}
+.nx-feature-grid h3{font-size:11px;font-weight:800;color:#d6c3ff;position:relative;z-index:1;margin:0}
+.nx-feature-grid p{font-size:9px;color:#aaa9c1;line-height:1.4;position:relative;z-index:1;margin:0}
+.nx-feature-open{font-size:8px;font-weight:bold;letter-spacing:1.2px;color:#35eaff;position:relative;z-index:1}
+@media(hover:hover){.nx-feature-grid>*:hover{border-color:rgba(0,207,255,.55)!important;box-shadow:0 0 22px rgba(0,207,255,.13),0 0 25px rgba(155,92,255,.13)}}
+
+/* TRANSLATION CAMERA */
+#translationCamera{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(0,0,0,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.tc-panel{width:100%;max-width:430px;max-height:92vh;overflow-y:auto;background:linear-gradient(145deg,#101827,#090d18);border:1px solid rgba(0,217,255,.35);border-radius:22px;padding:18px;box-shadow:0 0 30px rgba(0,217,255,.12);color:white}
+.tc-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.tc-title{font-size:19px;font-weight:800;color:#00d9ff}
+.tc-camera{height:230px;border:1px solid rgba(0,217,255,.4);border-radius:17px;background:radial-gradient(circle,#17283b,#080d17);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;overflow:hidden;position:relative}
+#tcVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:16px;background:#000;display:none;z-index:2}
+.tc-camera-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:12px;position:relative;z-index:1}
+.tc-camera-icon{font-size:48px}
+.tc-camera-text{color:#94a3b8;font-size:13px}
+.tc-section{margin-top:16px}
+.tc-label{display:block;color:#00d9ff;font-size:13px;font-weight:700;margin-bottom:8px}
+.tc-result{min-height:65px;padding:13px;border-radius:13px;background:#111c2c;border:1px solid #26384d;color:#cbd5e1;font-size:14px;line-height:1.6;overflow-wrap:anywhere;white-space:pre-wrap}
+.tc-controls{display:flex;gap:10px;margin-top:18px}
+.tc-panel .tc-btn{flex:1;min-height:45px;padding:12px 10px!important;border:1px solid #00d9ff!important;border-radius:13px!important;background:linear-gradient(135deg,#063b52,#142c50)!important;color:white!important;font-weight:700!important;font-size:13px!important;letter-spacing:0!important;box-shadow:none!important}
+.tc-panel .tc-btn.secondary{border-color:#475569!important;background:#172033!important}
+.tc-status{text-align:center;margin-top:13px;color:#64748b;font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+
+/* BACKGROUND REMOVER */
+#background-remover{display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:15px}
+.bg-panel{width:100%;max-width:420px;max-height:85vh;overflow-y:auto;background:linear-gradient(145deg,#171326,#080711);border:1px solid #9b5cff;border-radius:20px;padding:20px;color:white;box-shadow:0 0 30px #9b5cff55}
+@media(prefers-reduced-motion:reduce){.visual-ring{animation:none}}
 </style>
 </head>
 
@@ -543,176 +85,128 @@ body{
 <div class="background-glow glow-two"></div>
 
 <main class="container">
-
-  <header class="header">
-    <div class="brand">
-      <div class="logo">NX</div>
-      <div>
-        <div class="brand-name">NETHA X</div>
-        <div class="brand-sub">ULTIMATE</div>
-      </div>
+<header class="header">
+  <div class="brand">
+    <div class="logo">NX</div>
+    <div>
+      <div class="brand-name">NETHA X</div>
+      <div class="brand-sub">ULTIMATE</div>
     </div>
-    <div class="status"></div>
-  </header>
+  </div>
+  <div class="status"></div>
+</header>
 
-  <section class="welcome">
-    <div class="welcome-label">WELCOME</div>
-    <h1>WELCOME TO<br><span>NETHA X</span></h1>
-    <p>Your next-level digital experience starts here.</p>
-  </section>
-
-  
-<!-- NETHA X PREMIUM FEATURE CARDS -->
+<section class="welcome">
+  <div class="welcome-label">WELCOME</div>
+  <h1>WELCOME TO<br><span>NETHA X</span></h1>
+  <p>Your next-level digital experience starts here.</p>
+</section>
 
 <div class="nx-feature-grid">
-
-  <div class="nx-tap-card"
-       onclick="openBackgroundRemover()">
+  <div class="nx-tap-card" onclick="openBackgroundRemover()">
     <div class="nx-feature-icon">✂️</div>
     <h3>AI Background Remover</h3>
     <p>Remove photo background</p>
     <span class="nx-feature-open">OPEN TOOL →</span>
   </div>
 
-  <div class="nx-tap-card">
-    <div class="nx-feature-icon">📁</div>
-    <h3>File Manager</h3>
-    <p>Manage your files</p>
+  <div class="nx-tap-card" onclick="openTranslationCamera()">
+    <div class="nx-feature-icon">🌐</div>
+    <h3>Translation Camera</h3>
+    <p>Live Camera Translator</p>
     <span class="nx-feature-open">OPEN TOOL →</span>
-  </div>
-
-  <!-- ADD FUTURE FEATURE CARDS BELOW -->
-
-  </div>
-
-  <div class="section-title">YOUR EXPERIENCE</div>
-
-  <section class="visual-panel">
-    <div class="visual-ring">
-      <div class="visual-text">NX</div>
-    </div>
-  </section>
-
-  <footer class="footer">
-    NETHA X ULTIMATE • VERSION 1.0
-  </footer>
-
-</main>
-
-<!-- BACKGROUND REMOVER POPUP -->
-
-<div id="background-remover" style="
-display:none;
-position:fixed;
-inset:0;
-z-index:99999;
-background:rgba(0,0,0,0.82);
-backdrop-filter:blur(8px);
-align-items:center;
-justify-content:center;
-padding:15px;
-box-sizing:border-box;
-">
-
-  <div style="
-  width:100%;
-  max-width:420px;
-  max-height:85vh;
-  overflow-y:auto;
-  background:linear-gradient(145deg,#171326,#080711);
-  border:1px solid #9b5cff;
-  border-radius:20px;
-  padding:20px;
-  box-sizing:border-box;
-  color:white;
-  box-shadow:0 0 30px #9b5cff55;
-  ">
-
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <h2 style="color:#b98aff;font-size:17px;">
-        ✂️ AI BACKGROUND REMOVER
-      </h2>
-      <button onclick="closeBackgroundRemover()">✕</button>
-    </div>
-
-    <p style="color:#aaa;font-size:12px;text-align:center;">
-      Remove photo backgrounds automatically
-    </p>
-
-    <div style="
-    border:2px dashed #9b5cff;
-    border-radius:15px;
-    padding:25px 10px;
-    text-align:center;
-    margin-top:20px;
-    ">
-
-      <div style="font-size:38px;">📸</div>
-      <h3 style="font-size:15px;">Select Your Photo</h3>
-
-      <input
-        type="file"
-        id="bgImageInput"
-        accept="image/*"
-        hidden
-        onchange="previewBGPhoto(event)"
-      >
-
-      <button onclick="document.getElementById('bgImageInput').click()">
-        SELECT PHOTO
-      </button>
-
-    </div>
-
-    <div id="bgPhotoArea" style="display:none;margin-top:18px;text-align:center;">
-
-      <img id="bgPhotoPreview" style="
-      width:100%;
-      max-height:250px;
-      object-fit:contain;
-      border-radius:12px;
-      border:1px solid #9b5cff;
-      ">
-
-      <button onclick="startBGRemoval()" style="width:100%;margin-top:15px;">
-        ✂️ REMOVE BACKGROUND
-      </button>
-
-    </div>
-
-    <div id="bgResultArea" style="display:none;margin-top:18px;text-align:center;">
-
-      <h3 style="color:#35eaff;font-size:14px;">
-        BACKGROUND REMOVED
-      </h3>
-
-      <img id="bgResultPreview" style="
-      width:100%;
-      max-height:250px;
-      object-fit:contain;
-      border-radius:12px;
-      background-color:#fff;
-      border:1px solid #35eaff;
-      ">
-
-      <button id="bgDownloadBtn" onclick="downloadBGResult()" style="width:100%;margin-top:12px;">
-        ⬇ DOWNLOAD PNG
-      </button>
-
-    </div>
-
-    <p id="bgMessage" style="
-    text-align:center;
-    color:#35eaff;
-    font-size:12px;
-    margin-top:15px;
-    ">Select a photo to get started.</p>
-
   </div>
 </div>
 
-<script>
+<div class="section-title">YOUR EXPERIENCE</div>
 
+<section class="visual-panel">
+  <div class="visual-ring">
+    <div class="visual-text">NX</div>
+  </div>
+</section>
+
+<footer class="footer">NETHA X ULTIMATE • VERSION 1.0</footer>
+</main>
+
+<!-- TRANSLATION CAMERA POPUP -->
+<div id="translationCamera">
+  <div class="tc-panel">
+    <div class="tc-header">
+      <div class="tc-title">🌐 Translation Camera</div>
+      <button class="tc-btn secondary" onclick="closeTranslationCamera()" aria-label="Close Camera">×</button>
+    </div>
+
+    <div class="tc-camera">
+      <video id="tcVideo" autoplay playsinline muted></video>
+
+      <div id="tcCameraPlaceholder" class="tc-camera-placeholder">
+        <div class="tc-camera-icon">📷</div>
+        <div style="font-weight:700;">Live Camera Preview</div>
+        <div class="tc-camera-text">Press START to activate camera</div>
+      </div>
+    </div>
+
+    <div class="tc-section">
+      <span class="tc-label">DETECTED TEXT</span>
+      <div class="tc-result" id="tcDetected">Point your camera at printed text.</div>
+    </div>
+
+    <div class="tc-section">
+      <span class="tc-label">SINHALA TRANSLATION</span>
+      <div class="tc-result" id="tcTranslated">සිංහල පරිවර්තනය මෙතැන පෙන්වනු ඇත.</div>
+    </div>
+
+    <div class="tc-controls">
+      <button class="tc-btn" id="tcStartButton" onclick="startTranslationCamera()">▶ START</button>
+      <button class="tc-btn secondary" id="tcStopButton" onclick="stopTranslationCamera()">■ STOP</button>
+    </div>
+
+    <div class="tc-status" id="tcStatus">CAMERA NOT STARTED</div>
+  </div>
+</div>
+
+<!-- BACKGROUND REMOVER POPUP -->
+<div id="background-remover">
+  <div class="bg-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h2 style="color:#b98aff;font-size:17px;">✂️ AI BACKGROUND REMOVER</h2>
+      <button onclick="closeBackgroundRemover()">✕</button>
+    </div>
+
+    <p style="color:#aaa;font-size:12px;text-align:center;margin-top:10px;">
+      Remove photo backgrounds automatically
+    </p>
+
+    <div style="border:2px dashed #9b5cff;border-radius:15px;padding:25px 10px;text-align:center;margin-top:20px;">
+      <div style="font-size:38px;">📸</div>
+      <h3 style="font-size:15px;">Select Your Photo</h3>
+
+      <input type="file" id="bgImageInput" accept="image/*" hidden onchange="previewBGPhoto(event)">
+
+      <button onclick="document.getElementById('bgImageInput').click()">SELECT PHOTO</button>
+    </div>
+
+    <div id="bgPhotoArea" style="display:none;margin-top:18px;text-align:center;">
+      <img id="bgPhotoPreview" style="width:100%;max-height:250px;object-fit:contain;border-radius:12px;border:1px solid #9b5cff;">
+
+      <button onclick="startBGRemoval()" style="width:100%;margin-top:15px;">✂️ REMOVE BACKGROUND</button>
+    </div>
+
+    <div id="bgResultArea" style="display:none;margin-top:18px;text-align:center;">
+      <h3 style="color:#35eaff;font-size:14px;">BACKGROUND REMOVED</h3>
+
+      <img id="bgResultPreview" style="width:100%;max-height:250px;object-fit:contain;border-radius:12px;background-color:#fff;border:1px solid #35eaff;">
+
+      <button onclick="downloadBGResult()" style="width:100%;margin-top:12px;">⬇ DOWNLOAD PNG</button>
+    </div>
+
+    <p id="bgMessage" style="text-align:center;color:#35eaff;font-size:12px;margin-top:15px;">
+      Select a photo to get started.
+    </p>
+  </div>
+</div>
+<script>
 /* =================================
    GLOBAL TAP ANIMATION ENGINE
 ================================= */
@@ -722,215 +216,578 @@ const NX_TAP_SELECTOR =
 
 let nxActiveTapTarget = null;
 
-document.addEventListener("pointerdown",function(event){
-
+document.addEventListener("pointerdown", function(event) {
   const origin = event.target;
-
-  if(!(origin instanceof Element)) return;
+  if (!(origin instanceof Element)) return;
 
   const target = origin.closest(NX_TAP_SELECTOR);
+  if (!target || target.matches(":disabled")) return;
+  if (target.getAttribute("aria-disabled") === "true") return;
 
-  if(!target) return;
-  if(target.matches(":disabled")) return;
-  if(target.getAttribute("aria-disabled")==="true") return;
-
-  if(nxActiveTapTarget && nxActiveTapTarget!==target){
+  if (nxActiveTapTarget && nxActiveTapTarget !== target) {
     nxActiveTapTarget.classList.remove("nx-pressed");
   }
 
   nxActiveTapTarget = target;
-
-  target.classList.add("nx-tap-target","nx-pressed");
+  target.classList.add("nx-tap-target", "nx-pressed");
 
   const rect = target.getBoundingClientRect();
-  const diameter = Math.max(rect.width,rect.height)*2;
+  const diameter = Math.max(rect.width, rect.height) * 2;
 
   const ripple = document.createElement("span");
   ripple.className = "nx-ripple";
-  ripple.style.width = diameter+"px";
-  ripple.style.height = diameter+"px";
-
+  ripple.style.width = diameter + "px";
+  ripple.style.height = diameter + "px";
   ripple.style.left =
-    (event.clientX-rect.left-diameter/2)+"px";
-
+    (event.clientX - rect.left - diameter / 2) + "px";
   ripple.style.top =
-    (event.clientY-rect.top-diameter/2)+"px";
+    (event.clientY - rect.top - diameter / 2) + "px";
 
   target.appendChild(ripple);
 
-  window.setTimeout(function(){
-    ripple.remove();
-  },650);
-
+  window.setTimeout(() => ripple.remove(), 650);
 });
 
-function nxReleaseTapTarget(){
-
-  if(nxActiveTapTarget){
+function nxReleaseTapTarget() {
+  if (nxActiveTapTarget) {
     nxActiveTapTarget.classList.remove("nx-pressed");
     nxActiveTapTarget = null;
   }
-
 }
 
-document.addEventListener("pointerup",nxReleaseTapTarget);
-document.addEventListener("pointercancel",nxReleaseTapTarget);
-window.addEventListener("blur",nxReleaseTapTarget);
+document.addEventListener("pointerup", nxReleaseTapTarget);
+document.addEventListener("pointercancel", nxReleaseTapTarget);
+window.addEventListener("blur", nxReleaseTapTarget);
 
 
 /* =================================
-   BACKGROUND REMOVER
+   TRANSLATION CAMERA + NATIVE OCR
 ================================= */
 
-/* Add your NEW Poof API key here */
-const POOF_API_KEY = "pk_72b0ad9635e5e34d2554b77510745212";
+let tcStream = null;
+let tcStarting = false;
+let tcRequestId = 0;
+let tcCaptureTimer = null;
+let tcProcessing = false;
+
+const tcVideo = document.getElementById("tcVideo");
+const tcPlaceholder = document.getElementById("tcCameraPlaceholder");
+const tcDetected = document.getElementById("tcDetected");
+const tcTranslated = document.getElementById("tcTranslated");
+const tcStartButton = document.getElementById("tcStartButton");
+const tcStopButton = document.getElementById("tcStopButton");
+const tcStatus = document.getElementById("tcStatus");
+
+const tcCanvas = document.createElement("canvas");
+const tcContext = tcCanvas.getContext("2d", {
+  alpha: false
+});
+
+function openTranslationCamera() {
+  document.getElementById("translationCamera").style.display = "flex";
+}
+
+function closeTranslationCamera() {
+  stopTranslationCamera();
+  document.getElementById("translationCamera").style.display = "none";
+}
+
+function setTCStatus(message) {
+  if (tcStatus) {
+    tcStatus.textContent = message;
+  }
+}
+
+function updateTCButtons() {
+  tcStartButton.disabled = tcStarting || !!tcStream;
+  tcStopButton.disabled = !tcStarting && !tcStream;
+}
+
+async function startTranslationCamera() {
+  if (tcStarting || tcStream) return;
+
+  if (
+    !navigator.mediaDevices ||
+    typeof navigator.mediaDevices.getUserMedia !== "function"
+  ) {
+    setTCStatus("CAMERA NOT AVAILABLE — CHECK WEBVIEW CAMERA PERMISSION");
+    return;
+  }
+
+  const requestId = ++tcRequestId;
+
+  tcStarting = true;
+  updateTCButtons();
+  setTCStatus("REQUESTING CAMERA PERMISSION...");
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: "environment" }
+      },
+      audio: false
+    });
+
+    if (requestId !== tcRequestId) {
+      stream.getTracks().forEach(track => track.stop());
+      return;
+    }
+
+    tcStream = stream;
+    tcVideo.srcObject = stream;
+    tcVideo.style.display = "block";
+    tcPlaceholder.style.display = "none";
+
+    await tcVideo.play();
+
+    if (requestId !== tcRequestId) return;
+
+    tcStarting = false;
+    tcProcessing = false;
+
+    setTCStatus("CAMERA ACTIVE — SCANNING FOR TEXT...");
+    updateTCButtons();
+
+    const videoTrack = stream.getVideoTracks()[0];
+
+    if (videoTrack) {
+      videoTrack.addEventListener("ended", function() {
+        if (tcStream === stream) {
+          stopTranslationCamera();
+          setTCStatus("CAMERA DISCONNECTED");
+        }
+      });
+    }
+
+    // Scan a frame every 2.5 seconds
+    tcCaptureTimer = setInterval(
+      captureTranslationFrame,
+      2500
+    );
+
+    // First scan without waiting for the interval
+    captureTranslationFrame();
+
+  } catch (error) {
+    if (requestId === tcRequestId) {
+      tcStream = null;
+      tcVideo.srcObject = null;
+      tcVideo.style.display = "none";
+      tcPlaceholder.style.display = "flex";
+
+      let message = "CAMERA ERROR";
+
+      switch (error.name) {
+        case "NotAllowedError":
+          message = "CAMERA PERMISSION DENIED — ALLOW CAMERA ACCESS";
+          break;
+
+        case "NotFoundError":
+          message = "NO CAMERA FOUND ON THIS DEVICE";
+          break;
+
+        case "NotReadableError":
+          message = "CAMERA IS BUSY — CLOSE OTHER APPS USING CAMERA";
+          break;
+
+        case "OverconstrainedError":
+          message = "REQUESTED CAMERA IS NOT AVAILABLE";
+          break;
+
+        case "SecurityError":
+          message = "CAMERA REQUIRES A SECURE APP ORIGIN";
+          break;
+
+        default:
+          message = "CAMERA ERROR: " + (error.message || "UNKNOWN ERROR");
+      }
+
+      setTCStatus(message);
+    }
+
+  } finally {
+    if (requestId === tcRequestId) {
+      tcStarting = false;
+      updateTCButtons();
+    }
+  }
+}
+
+
+/* CAPTURE CAMERA FRAME AND SEND TO ANDROID */
+
+function captureTranslationFrame() {
+  if (!tcStream || tcProcessing) return;
+
+  if (!tcVideo.videoWidth || !tcVideo.videoHeight) return;
+
+  if (
+    !window.AndroidBridge ||
+    typeof window.AndroidBridge.processTranslationFrame !== "function"
+  ) {
+    setTCStatus("NATIVE OCR BRIDGE NOT AVAILABLE");
+    return;
+  }
+
+  if (!tcContext) {
+    setTCStatus("CAMERA FRAME PROCESSING NOT AVAILABLE");
+    return;
+  }
+
+  tcProcessing = true;
+
+  const originalWidth = tcVideo.videoWidth;
+  const originalHeight = tcVideo.videoHeight;
+
+  // Keep image small to reduce CPU and memory usage
+  const scale = Math.min(1, 720 / originalWidth);
+
+  tcCanvas.width = Math.round(originalWidth * scale);
+  tcCanvas.height = Math.round(originalHeight * scale);
+
+  try {
+    tcContext.drawImage(
+      tcVideo,
+      0,
+      0,
+      tcCanvas.width,
+      tcCanvas.height
+    );
+
+    const imageData = tcCanvas.toDataURL(
+      "image/jpeg",
+      0.65
+    );
+
+    window.AndroidBridge.processTranslationFrame(imageData);
+
+    setTCStatus("SCANNING TEXT...");
+
+  } catch (error) {
+    tcProcessing = false;
+    setTCStatus("FRAME ERROR: " + (error.message || "TRY AGAIN"));
+  }
+}
+
+
+/* RECEIVE OCR AND TRANSLATION FROM KOTLIN */
+
+window.onTCNativeResult = function(result) {
+  tcProcessing = false;
+
+  if (!result || !tcStream) return;
+
+  if (result.text) {
+    tcDetected.textContent = result.text;
+  }
+
+  // Kotlin sends "unchanged" when the same text is seen again.
+  // Keep the previous translation instead of clearing it.
+  if (
+    result.translation &&
+    result.language !== "unchanged"
+  ) {
+    tcTranslated.textContent = result.translation;
+  }
+
+  if (result.status) {
+    setTCStatus(result.status);
+  }
+};
+
+
+/* STOP CAMERA */
+
+function stopTranslationCamera() {
+  tcRequestId++;
+
+  tcStarting = false;
+  tcProcessing = false;
+
+  if (tcCaptureTimer) {
+    clearInterval(tcCaptureTimer);
+    tcCaptureTimer = null;
+  }
+
+  if (tcStream) {
+    tcStream.getTracks().forEach(track => track.stop());
+    tcStream = null;
+  }
+
+  if (tcVideo) {
+    tcVideo.pause();
+    tcVideo.srcObject = null;
+    tcVideo.style.display = "none";
+  }
+
+  if (tcPlaceholder) {
+    tcPlaceholder.style.display = "flex";
+  }
+
+  setTCStatus("CAMERA STOPPED");
+  updateTCButtons();
+}
+
+updateTCButtons();
+
+
+/* =================================
+   BACKGROUND REMOVER API SETTINGS
+================================= */
+
+/*
+  Add your NEW Poof API key below.
+
+  Example:
+  const POOF_API_KEY = "your_new_api_key_here";
+
+  Endpoint:
+  https://api.poof.bg/v1/remove
+
+  IMPORTANT:
+  Do not publish your real API key in a public GitHub repository.
+  Anyone can view a key stored in public HTML.
+*/
+
+const POOF_API_KEY = "PASTE_YOUR_NEW_POOF_API_KEY_HERE";
+const POOF_API_URL = "https://api.poof.bg/v1/remove";
+
+
+/* =================================
+   BACKGROUND REMOVER SYSTEM
+================================= */
 
 let bgResultURL = null;
 let bgPreviewURL = null;
+let bgRemoving = false;
 
-function openBackgroundRemover(){
-  document.getElementById("background-remover").style.display="flex";
+function openBackgroundRemover() {
+  document.getElementById("background-remover").style.display = "flex";
 }
 
-function closeBackgroundRemover(){
-  document.getElementById("background-remover").style.display="none";
+function closeBackgroundRemover() {
+  document.getElementById("background-remover").style.display = "none";
 }
 
-function previewBGPhoto(event){
-
+function previewBGPhoto(event) {
   const file = event.target.files[0];
   const message = document.getElementById("bgMessage");
 
-  if(!file) return;
+  if (!file) return;
 
-  if(!file.type.startsWith("image/")){
-    message.textContent="Please select a valid image.";
-    event.target.value="";
+  if (!file.type.startsWith("image/")) {
+    message.textContent = "Please select a valid image.";
+    event.target.value = "";
     return;
   }
 
-  if(file.size>20*1024*1024){
-    message.textContent="Image must be smaller than 20 MB.";
-    event.target.value="";
+  if (file.size > 20 * 1024 * 1024) {
+    message.textContent = "Image must be smaller than 20 MB.";
+    event.target.value = "";
     return;
   }
 
-  if(bgResultURL){
+  if (bgResultURL) {
     URL.revokeObjectURL(bgResultURL);
-    bgResultURL=null;
+    bgResultURL = null;
   }
 
-  document.getElementById("bgResultArea").style.display="none";
+  document.getElementById("bgResultArea").style.display = "none";
   document.getElementById("bgResultPreview").removeAttribute("src");
 
-  if(bgPreviewURL){
+  if (bgPreviewURL) {
     URL.revokeObjectURL(bgPreviewURL);
+    bgPreviewURL = null;
   }
 
-  bgPreviewURL=URL.createObjectURL(file);
+  bgPreviewURL = URL.createObjectURL(file);
 
-  document.getElementById("bgPhotoPreview").src=bgPreviewURL;
-  document.getElementById("bgPhotoArea").style.display="block";
+  document.getElementById("bgPhotoPreview").src = bgPreviewURL;
+  document.getElementById("bgPhotoArea").style.display = "block";
 
-  message.textContent="Photo selected successfully!";
+  message.textContent = "Photo selected successfully!";
 }
 
-async function startBGRemoval(){
 
-  const file=document.getElementById("bgImageInput").files[0];
-  const message=document.getElementById("bgMessage");
-  const button=document.querySelector("#bgPhotoArea button");
+/* REMOVE BACKGROUND USING POOF API */
 
-  if(!file){
-    message.textContent="Please select a photo first.";
+async function startBGRemoval() {
+  const file = document.getElementById("bgImageInput").files[0];
+  const message = document.getElementById("bgMessage");
+  const resultArea = document.getElementById("bgResultArea");
+  const resultPreview = document.getElementById("bgResultPreview");
+  const removeButton = document.querySelector("#bgPhotoArea button");
+
+  if (bgRemoving) return;
+
+  if (!file) {
+    message.textContent = "Please select a photo first.";
     return;
   }
 
-  if(POOF_API_KEY==="ADD_NEW_POOF_API_KEY_HERE"){
-    message.textContent="Please add your new Poof API Key.";
+  if (
+    !POOF_API_KEY ||
+    POOF_API_KEY === "PASTE_YOUR_NEW_POOF_API_KEY_HERE"
+  ) {
+    message.textContent =
+      "ADD YOUR NEW POOF API KEY IN THE API SETTINGS SECTION.";
     return;
   }
 
-  button.disabled=true;
-  button.textContent="PROCESSING...";
-  message.textContent="AI is removing the background...";
+  if (file.size > 20 * 1024 * 1024) {
+    message.textContent = "Image must be smaller than 20 MB.";
+    return;
+  }
 
-  try{
+  bgRemoving = true;
 
-    const formData=new FormData();
-    formData.append("file",file);
+  if (removeButton) {
+    removeButton.disabled = true;
+    removeButton.textContent = "PROCESSING...";
+  }
 
-    const response=await fetch(
-      "https://api.poof.bg/v1/remove",
-      {
-        method:"POST",
-        headers:{
-          "x-api-key":POOF_API_KEY
-        },
-        body:formData
+  message.textContent = "UPLOADING IMAGE TO POOF API...";
+
+  try {
+    const formData = new FormData();
+    formData.append("file", file, file.name);
+
+    message.textContent = "AI IS REMOVING THE BACKGROUND...";
+
+    const response = await fetch(POOF_API_URL, {
+      method: "POST",
+      headers: {
+        "x-api-key": POOF_API_KEY
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+
+      let errorMessage =
+        "API REQUEST FAILED (" + response.status + ")";
+
+      try {
+        const errorData = JSON.parse(errorText);
+
+        errorMessage =
+          errorData.error?.message ||
+          errorData.message ||
+          errorMessage;
+
+      } catch (parseError) {
+        if (errorText) {
+          errorMessage = errorText.slice(0, 180);
+        }
       }
-    );
 
-    if(!response.ok){
-      const errorText=await response.text();
-      throw new Error("API Error ("+response.status+"): "+errorText);
+      throw new Error(errorMessage);
     }
 
-    const resultBlob=await response.blob();
+    const contentType =
+      response.headers.get("content-type") || "";
 
-    if(!resultBlob.type.startsWith("image/")){
-      throw new Error("The API did not return a valid image.");
+    let resultBlob;
+
+    if (contentType.includes("application/json")) {
+      const resultData = await response.json();
+
+      if (resultData.result_url) {
+        const imageResponse = await fetch(resultData.result_url);
+
+        if (!imageResponse.ok) {
+          throw new Error("COULD NOT DOWNLOAD THE RESULT IMAGE.");
+        }
+
+        resultBlob = await imageResponse.blob();
+
+      } else {
+        throw new Error(
+          resultData.error?.message ||
+          resultData.message ||
+          "THE API DID NOT RETURN AN IMAGE."
+        );
+      }
+
+    } else {
+      resultBlob = await response.blob();
     }
 
-    if(bgResultURL){
+    if (!resultBlob || !resultBlob.size) {
+      throw new Error("EMPTY IMAGE RECEIVED FROM API.");
+    }
+
+    if (
+      !resultBlob.type ||
+      !resultBlob.type.startsWith("image/")
+    ) {
+      resultBlob = new Blob(
+        [resultBlob],
+        { type: "image/png" }
+      );
+    }
+
+    if (bgResultURL) {
       URL.revokeObjectURL(bgResultURL);
+      bgResultURL = null;
     }
 
-    bgResultURL=URL.createObjectURL(resultBlob);
+    bgResultURL = URL.createObjectURL(resultBlob);
 
-    document.getElementById("bgResultPreview").src=bgResultURL;
-    document.getElementById("bgResultArea").style.display="block";
+    resultPreview.src = bgResultURL;
+    resultArea.style.display = "block";
 
-    message.textContent="Background removed successfully!";
+    message.textContent = "SUCCESS! BACKGROUND REMOVED.";
 
-  }catch(error){
+  } catch (error) {
+    console.error("Background Remover Error:", error);
 
-    message.textContent=error.message||"Something went wrong.";
+    if (error instanceof TypeError) {
+      message.textContent =
+        "NETWORK OR CORS ERROR — CHECK INTERNET CONNECTION AND API ACCESS.";
+    } else {
+      message.textContent =
+        "BACKGROUND REMOVAL FAILED: " +
+        (error.message || "UNKNOWN ERROR");
+    }
 
-  }finally{
+  } finally {
+    bgRemoving = false;
 
-    button.disabled=false;
-    button.textContent="✂️ REMOVE BACKGROUND";
-
+    if (removeButton) {
+      removeButton.disabled = false;
+      removeButton.textContent = "✂️ REMOVE BACKGROUND";
+    }
   }
-
 }
 
 
-async function downloadBGResult(){
+/* DOWNLOAD BACKGROUND RESULT */
 
-  if(!bgResultURL) return;
+async function downloadBGResult() {
+  if (!bgResultURL) return;
 
-  try{
-
+  try {
     const response = await fetch(bgResultURL);
-    const blob = await response.blob();
 
+    if (!response.ok) {
+      throw new Error("Could not read result image.");
+    }
+
+    const blob = await response.blob();
     const reader = new FileReader();
 
-    reader.onload = function(){
-
+    reader.onload = function() {
       const dataUrl = reader.result;
 
-      if(
+      if (
         window.AndroidBridge &&
         typeof window.AndroidBridge.saveImage === "function"
-      ){
-
+      ) {
         window.AndroidBridge.saveImage(dataUrl);
 
-      }else{
-
+      } else {
         const link = document.createElement("a");
         link.href = dataUrl;
         link.download = "NETHA-Background-Removed.png";
@@ -938,19 +795,35 @@ async function downloadBGResult(){
         document.body.appendChild(link);
         link.click();
         link.remove();
-
       }
     };
 
     reader.readAsDataURL(blob);
 
-  }catch(error){
-
+  } catch (error) {
     document.getElementById("bgMessage").textContent =
       "Download failed: " + error.message;
-
   }
 }
+
+
+/* =================================
+   CLOSE POPUPS WITH ESCAPE KEY
+================================= */
+
+document.addEventListener("keydown", function(event) {
+  if (event.key === "Escape") {
+    closeTranslationCamera();
+    closeBackgroundRemover();
+  }
+});
+
+
+/* STOP CAMERA WHEN PAGE IS UNLOADED */
+
+window.addEventListener("pagehide", function() {
+  stopTranslationCamera();
+});
 
 </script>
 
