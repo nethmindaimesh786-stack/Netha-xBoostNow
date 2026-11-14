@@ -206,6 +206,7 @@ body{min-height:100vh;font-family:Arial,sans-serif;color:#fff;background:radial-
     </p>
   </div>
 </div>
+
 <script>
 /* =================================
    GLOBAL TAP ANIMATION ENGINE
@@ -270,6 +271,9 @@ let tcRequestId = 0;
 let tcCaptureTimer = null;
 let tcProcessing = false;
 
+// Each camera run receives a unique session ID.
+let tcSessionId = 0;
+
 const tcVideo = document.getElementById("tcVideo");
 const tcPlaceholder = document.getElementById("tcCameraPlaceholder");
 const tcDetected = document.getElementById("tcDetected");
@@ -303,8 +307,40 @@ function updateTCButtons() {
   tcStopButton.disabled = !tcStarting && !tcStream;
 }
 
+// Tell native Android to activate this session and clear old results.
+function resetNativeTranslationSession() {
+  if (
+    window.AndroidBridge &&
+    typeof window.AndroidBridge.resetTranslation === "function"
+  ) {
+    try {
+      AndroidBridge.resetTranslation(tcSessionId);
+    } catch (error) {
+      console.error("Translation session reset failed:", error);
+    }
+  }
+}
+
+
 async function startTranslationCamera() {
   if (tcStarting || tcStream) return;
+
+  // Invalidate every callback from the previous session.
+  tcSessionId++;
+  const currentSessionId = tcSessionId;
+
+  tcProcessing = false;
+
+  tcDetected.textContent =
+    "Point your camera at printed text.";
+
+  tcTranslated.textContent =
+    "සිංහල පරිවර්තනය මෙතැන පෙන්වනු ඇත.";
+
+  setTCStatus("STARTING NEW CAMERA SESSION...");
+
+  // Reset native OCR memory with the new session ID.
+  resetNativeTranslationSession();
 
   if (
     !navigator.mediaDevices ||
@@ -328,7 +364,11 @@ async function startTranslationCamera() {
       audio: false
     });
 
-    if (requestId !== tcRequestId) {
+    // Ignore camera permission results from an old request/session.
+    if (
+      requestId !== tcRequestId ||
+      currentSessionId !== tcSessionId
+    ) {
       stream.getTracks().forEach(track => track.stop());
       return;
     }
@@ -340,7 +380,12 @@ async function startTranslationCamera() {
 
     await tcVideo.play();
 
-    if (requestId !== tcRequestId) return;
+    if (
+      requestId !== tcRequestId ||
+      currentSessionId !== tcSessionId
+    ) {
+      return;
+    }
 
     tcStarting = false;
     tcProcessing = false;
@@ -352,24 +397,28 @@ async function startTranslationCamera() {
 
     if (videoTrack) {
       videoTrack.addEventListener("ended", function() {
-        if (tcStream === stream) {
+        if (
+          tcStream === stream &&
+          currentSessionId === tcSessionId
+        ) {
           stopTranslationCamera();
           setTCStatus("CAMERA DISCONNECTED");
         }
       });
     }
 
-    // Scan a frame every 2.5 seconds
     tcCaptureTimer = setInterval(
       captureTranslationFrame,
       2500
     );
 
-    // First scan without waiting for the interval
     captureTranslationFrame();
 
   } catch (error) {
-    if (requestId === tcRequestId) {
+    if (
+      requestId === tcRequestId &&
+      currentSessionId === tcSessionId
+    ) {
       tcStream = null;
       tcVideo.srcObject = null;
       tcVideo.style.display = "none";
@@ -399,14 +448,18 @@ async function startTranslationCamera() {
           break;
 
         default:
-          message = "CAMERA ERROR: " + (error.message || "UNKNOWN ERROR");
+          message = "CAMERA ERROR: " +
+            (error.message || "UNKNOWN ERROR");
       }
 
       setTCStatus(message);
     }
 
   } finally {
-    if (requestId === tcRequestId) {
+    if (
+      requestId === tcRequestId &&
+      currentSessionId === tcSessionId
+    ) {
       tcStarting = false;
       updateTCButtons();
     }
@@ -434,12 +487,14 @@ function captureTranslationFrame() {
     return;
   }
 
+  const frameSessionId = tcSessionId;
+
   tcProcessing = true;
 
   const originalWidth = tcVideo.videoWidth;
   const originalHeight = tcVideo.videoHeight;
 
-  // Keep image small to reduce CPU and memory usage
+  // Keep image small to reduce CPU and memory usage.
   const scale = Math.min(1, 720 / originalWidth);
 
   tcCanvas.width = Math.round(originalWidth * scale);
@@ -459,13 +514,19 @@ function captureTranslationFrame() {
       0.65
     );
 
-    window.AndroidBridge.processTranslationFrame(imageData);
+    // Send both the image and its session ID to native Android.
+    window.AndroidBridge.processTranslationFrame(
+      imageData,
+      frameSessionId
+    );
 
     setTCStatus("SCANNING TEXT...");
 
   } catch (error) {
-    tcProcessing = false;
-    setTCStatus("FRAME ERROR: " + (error.message || "TRY AGAIN"));
+    if (frameSessionId === tcSessionId) {
+      tcProcessing = false;
+      setTCStatus("FRAME ERROR: " + (error.message || "TRY AGAIN"));
+    }
   }
 }
 
@@ -473,16 +534,26 @@ function captureTranslationFrame() {
 /* RECEIVE OCR AND TRANSLATION FROM KOTLIN */
 
 window.onTCNativeResult = function(result) {
-  tcProcessing = false;
 
-  if (!result || !tcStream) return;
+  if (!result) return;
+
+  // CRITICAL: Ignore every result from an older camera session.
+  if (Number(result.sessionId) !== tcSessionId) {
+    return;
+  }
+
+  // Ignore results if the camera is no longer active.
+  if (!tcStream) {
+    return;
+  }
+
+  tcProcessing = false;
 
   if (result.text) {
     tcDetected.textContent = result.text;
   }
 
-  // Kotlin sends "unchanged" when the same text is seen again.
-  // Keep the previous translation instead of clearing it.
+  // Keep the previous translation when the text is unchanged.
   if (
     result.translation &&
     result.language !== "unchanged"
@@ -499,10 +570,16 @@ window.onTCNativeResult = function(result) {
 /* STOP CAMERA */
 
 function stopTranslationCamera() {
+
+  // Invalidate pending camera and OCR callbacks immediately.
+  tcSessionId++;
   tcRequestId++;
 
   tcStarting = false;
   tcProcessing = false;
+
+  // Reset native state using the new invalidation session ID.
+  resetNativeTranslationSession();
 
   if (tcCaptureTimer) {
     clearInterval(tcCaptureTimer);
