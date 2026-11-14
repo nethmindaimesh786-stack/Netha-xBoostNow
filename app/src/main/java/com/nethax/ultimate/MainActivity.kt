@@ -10,7 +10,11 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.os.storage.StorageManager
 import android.provider.MediaStore
+import android.provider.Settings
+import android.system.OsConstants
 import android.text.Html
 import android.util.Base64
 import android.webkit.JavascriptInterface
@@ -68,6 +72,10 @@ class MainActivity : Activity() {
     companion object {
         private const val FILE_CHOOSER_REQUEST_CODE = 1001
         private const val CAMERA_PERMISSION_REQUEST_CODE = 2001
+
+        private const val CACHE_PERMISSION_REQUEST_CODE = 3001
+        private const val CACHE_CLEAR_REQUEST_CODE = 3002
+
         private const val MAX_FRAME_BASE64_LENGTH = 5_000_000
         private const val MAX_TRANSLATION_BYTES = 450
     }
@@ -259,6 +267,7 @@ class MainActivity : Activity() {
         )
     }
 
+    // Handle camera permission.
     @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -292,6 +301,54 @@ class MainActivity : Activity() {
     }
 
     inner class AndroidBridge {
+
+        // Request real Android device cache cleanup.
+        @JavascriptInterface
+        fun requestCacheClear() {
+
+            runOnUiThread {
+
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                    sendCacheClearStatus(
+                        "This cache cleaning feature requires Android 11 or newer.",
+                        false
+                    )
+                    return@runOnUiThread
+                }
+
+                if (!Environment.isExternalStorageManager()) {
+
+                    try {
+
+                        val permissionIntent = Intent(
+                            Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                            Uri.parse("package:$packageName")
+                        )
+
+                        startActivityForResult(
+                            permissionIntent,
+                            CACHE_PERMISSION_REQUEST_CODE
+                        )
+
+                        sendCacheClearStatus(
+                            "Please enable All files access for NETHA X ULTIMATE, then return and tap Clear Cache again.",
+                            false
+                        )
+
+                    } catch (e: Exception) {
+
+                        sendCacheClearStatus(
+                            "Unable to open storage permission settings.",
+                            false
+                        )
+                    }
+
+                    return@runOnUiThread
+                }
+
+                launchSystemCacheClear()
+            }
+        }
 
         // Reset translation and activate a new camera session.
         @JavascriptInterface
@@ -607,6 +664,69 @@ class MainActivity : Activity() {
         }
     }
 
+    // Launch Android's official system cache-clear confirmation.
+    private fun launchSystemCacheClear() {
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            sendCacheClearStatus(
+                "Android 11 or newer is required.",
+                false
+            )
+            return
+        }
+
+        try {
+
+            val clearIntent = Intent(
+                StorageManager.ACTION_CLEAR_APP_CACHE
+            )
+
+            startActivityForResult(
+                clearIntent,
+                CACHE_CLEAR_REQUEST_CODE
+            )
+
+            sendCacheClearStatus(
+                "Android system cache cleanup confirmation opened.",
+                false
+            )
+
+        } catch (e: Exception) {
+
+            sendCacheClearStatus(
+                "Could not start system cache cleanup: ${e.message ?: "Unknown error"}",
+                false
+            )
+        }
+    }
+
+    // Send cache cleanup status to the HTML interface.
+    private fun sendCacheClearStatus(
+        status: String,
+        success: Boolean
+    ) {
+
+        if (isActivityDestroyed || !::webView.isInitialized) return
+
+        val result = JSONObject().apply {
+            put("status", status)
+            put("success", success)
+        }
+
+        runOnUiThread {
+
+            if (isActivityDestroyed || !::webView.isInitialized) {
+                return@runOnUiThread
+            }
+
+            webView.evaluateJavascript(
+                "window.onCacheClearStatus && " +
+                "window.onCacheClearStatus($result);",
+                null
+            )
+        }
+    }
+
     // Translate detected text into Sinhala using MyMemory.
     private fun translateToSinhala(
         originalText: String,
@@ -847,7 +967,7 @@ class MainActivity : Activity() {
 
             webView.evaluateJavascript(
                 "window.onTCNativeResult && " +
-                "window.onTCNativeResult(${result});",
+                "window.onTCNativeResult($result);",
                 null
             )
         }
@@ -861,21 +981,72 @@ class MainActivity : Activity() {
     ) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if (requestCode == FILE_CHOOSER_REQUEST_CODE) {
+        when (requestCode) {
 
-            val result = if (resultCode == Activity.RESULT_OK) {
+            FILE_CHOOSER_REQUEST_CODE -> {
 
-                WebChromeClient.FileChooserParams.parseResult(
-                    resultCode,
-                    data
-                )
+                val result = if (resultCode == Activity.RESULT_OK) {
 
-            } else {
-                null
+                    WebChromeClient.FileChooserParams.parseResult(
+                        resultCode,
+                        data
+                    )
+
+                } else {
+                    null
+                }
+
+                filePathCallback?.onReceiveValue(result)
+                filePathCallback = null
             }
 
-            filePathCallback?.onReceiveValue(result)
-            filePathCallback = null
+            CACHE_PERMISSION_REQUEST_CODE -> {
+
+                if (
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                    Environment.isExternalStorageManager()
+                ) {
+
+                    sendCacheClearStatus(
+                        "Storage access granted. Return to Mobile Optimizer and tap Clear Cache again.",
+                        true
+                    )
+
+                } else {
+
+                    sendCacheClearStatus(
+                        "All files access was not enabled. Cache cleanup was not started.",
+                        false
+                    )
+                }
+            }
+
+            CACHE_CLEAR_REQUEST_CODE -> {
+
+                when (resultCode) {
+
+                    Activity.RESULT_OK -> {
+                        sendCacheClearStatus(
+                            "Android reports that the app cache cleanup completed.",
+                            true
+                        )
+                    }
+
+                    OsConstants.EIO -> {
+                        sendCacheClearStatus(
+                            "Android reported an error while clearing cache.",
+                            false
+                        )
+                    }
+
+                    else -> {
+                        sendCacheClearStatus(
+                            "Cache cleanup was cancelled. No completion was confirmed.",
+                            false
+                        )
+                    }
+                }
+            }
         }
     }
 
