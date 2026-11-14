@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
@@ -22,10 +23,12 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.webkit.WebViewAssetLoader
+import com.google.mlkit.nl.languageid.LanguageIdentification
+import com.google.mlkit.nl.languageid.LanguageIdentifier
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
-import com.google.mlkit.nl.languageid.LanguageIdentification
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -40,13 +43,9 @@ class MainActivity : Activity() {
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
     private var pendingCameraRequest: PermissionRequest? = null
 
-    private val textRecognizer by lazy {
-        TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-    }
-
-    private val languageIdentifier by lazy {
-        LanguageIdentification.getClient()
-    }
+    // Initialize ML Kit only when required.
+    private var textRecognizer: TextRecognizer? = null
+    private var languageIdentifier: LanguageIdentifier? = null
 
     private val translationExecutor = Executors.newSingleThreadExecutor()
 
@@ -54,11 +53,35 @@ class MainActivity : Activity() {
     private var lastProcessedText = ""
 
     @Volatile
+    private var lastDetectedLanguage = ""
+
+    @Volatile
+    private var lastTranslation = ""
+
+    @Volatile
     private var isActivityDestroyed = false
 
     companion object {
         private const val FILE_CHOOSER_REQUEST_CODE = 1001
         private const val CAMERA_PERMISSION_REQUEST_CODE = 2001
+        private const val MAX_FRAME_BASE64_LENGTH = 5_000_000
+        private const val MAX_TRANSLATION_BYTES = 450
+    }
+
+    private fun getTextRecognizer(): TextRecognizer {
+        return textRecognizer ?: TextRecognition
+            .getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+            .also {
+                textRecognizer = it
+            }
+    }
+
+    private fun getLanguageIdentifier(): LanguageIdentifier {
+        return languageIdentifier ?: LanguageIdentification
+            .getClient()
+            .also {
+                languageIdentifier = it
+            }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -95,6 +118,19 @@ class MainActivity : Activity() {
                 return url?.let {
                     assetLoader.shouldInterceptRequest(Uri.parse(it))
                 }
+            }
+
+            override fun shouldOverrideUrlLoading(
+                view: WebView?,
+                request: WebResourceRequest?
+            ): Boolean {
+                val uri = request?.url ?: return true
+
+                // Keep the JavaScript bridge inside the local app origin.
+                return !(
+                    uri.scheme == "https" &&
+                    uri.host == "appassets.androidplatform.net"
+                )
             }
         }
 
@@ -244,6 +280,10 @@ class MainActivity : Activity() {
                     throw Exception("Invalid image data")
                 }
 
+                if (base64Data.length > MAX_FRAME_BASE64_LENGTH * 4) {
+                    throw Exception("Image is too large")
+                }
+
                 val imageBytes = Base64.decode(
                     base64Data,
                     Base64.DEFAULT
@@ -336,11 +376,16 @@ class MainActivity : Activity() {
 
             if (isActivityDestroyed) return
 
+            var bitmap: Bitmap? = null
+
             try {
 
                 val base64Data = dataUrl.substringAfter(",", "")
 
-                if (base64Data.isBlank() || base64Data.length > 5_000_000) {
+                if (
+                    base64Data.isBlank() ||
+                    base64Data.length > MAX_FRAME_BASE64_LENGTH
+                ) {
                     sendTCResult(
                         "",
                         "",
@@ -355,7 +400,7 @@ class MainActivity : Activity() {
                     Base64.DEFAULT
                 )
 
-                val bitmap = BitmapFactory.decodeByteArray(
+                bitmap = BitmapFactory.decodeByteArray(
                     imageBytes,
                     0,
                     imageBytes.size
@@ -363,10 +408,17 @@ class MainActivity : Activity() {
 
                 val inputImage = InputImage.fromBitmap(bitmap, 0)
 
-                textRecognizer.process(inputImage)
+                getTextRecognizer()
+                    .process(inputImage)
                     .addOnSuccessListener { visionText ->
 
                         val detectedText = visionText.text.trim()
+
+                        // OCR has finished using this bitmap.
+                        bitmap?.let {
+                            if (!it.isRecycled) it.recycle()
+                        }
+                        bitmap = null
 
                         if (detectedText.isBlank()) {
                             sendTCResult(
@@ -375,18 +427,27 @@ class MainActivity : Activity() {
                                 "",
                                 "Looking for text..."
                             )
-                            bitmap.recycle()
                             return@addOnSuccessListener
                         }
 
+                        // Important: always respond to repeated frames.
+                        // Otherwise JavaScript may remain locked in processing state.
                         if (detectedText == lastProcessedText) {
-                            bitmap.recycle()
+                            sendTCResult(
+                                detectedText,
+                                "unchanged",
+                                "",
+                                "Text detected — no change"
+                            )
                             return@addOnSuccessListener
                         }
 
                         lastProcessedText = detectedText
+                        lastDetectedLanguage = ""
+                        lastTranslation = ""
 
-                        languageIdentifier.identifyLanguage(detectedText)
+                        getLanguageIdentifier()
+                            .identifyLanguage(detectedText)
                             .addOnSuccessListener { languageCode ->
 
                                 if (
@@ -399,9 +460,10 @@ class MainActivity : Activity() {
                                         "",
                                         "Language could not be detected"
                                     )
-                                    bitmap.recycle()
                                     return@addOnSuccessListener
                                 }
+
+                                lastDetectedLanguage = languageCode
 
                                 translateToSinhala(
                                     detectedText,
@@ -409,6 +471,7 @@ class MainActivity : Activity() {
                                 )
                             }
                             .addOnFailureListener {
+
                                 sendTCResult(
                                     detectedText,
                                     "Unknown",
@@ -416,12 +479,13 @@ class MainActivity : Activity() {
                                     "Language detection failed"
                                 )
                             }
-
-                        bitmap.recycle()
                     }
                     .addOnFailureListener { error ->
 
-                        bitmap.recycle()
+                        bitmap?.let {
+                            if (!it.isRecycled) it.recycle()
+                        }
+                        bitmap = null
 
                         sendTCResult(
                             "",
@@ -432,6 +496,10 @@ class MainActivity : Activity() {
                     }
 
             } catch (e: Exception) {
+
+                bitmap?.let {
+                    if (!it.isRecycled) it.recycle()
+                }
 
                 sendTCResult(
                     "",
@@ -454,6 +522,9 @@ class MainActivity : Activity() {
             .lowercase()
 
         if (sourceLanguage == "si") {
+
+            lastTranslation = originalText
+
             sendTCResult(
                 originalText,
                 detectedLanguage,
@@ -463,144 +534,138 @@ class MainActivity : Activity() {
             return
         }
 
-        translationExecutor.execute {
+        try {
 
-            try {
-
-                val textToTranslate = limitUtf8Bytes(
-                    originalText,
-                    450
-                )
-
-                val encodedText = URLEncoder.encode(
-                    textToTranslate,
-                    "UTF-8"
-                )
-
-                val languagePair = "$sourceLanguage|si"
-
-                val encodedPair = URLEncoder.encode(
-                    languagePair,
-                    "UTF-8"
-                )
-
-                val url = URL(
-                    "https://api.mymemory.translated.net/get" +
-                    "?q=$encodedText&langpair=$encodedPair"
-                )
-
-                val connection = url.openConnection()
-                    as HttpURLConnection
-
-                connection.requestMethod = "GET"
-                connection.connectTimeout = 10000
-                connection.readTimeout = 10000
-                connection.setRequestProperty(
-                    "User-Agent",
-                    "NETHA-X-ULTIMATE"
-                )
+            translationExecutor.execute {
 
                 try {
 
-                    val responseCode = connection.responseCode
+                    // Do not silently translate only part of the text.
+                    val textBytes = originalText.toByteArray(Charsets.UTF_8)
 
-                    val responseStream =
-                        if (responseCode in 200..299) {
-                            connection.inputStream
-                        } else {
-                            connection.errorStream
-                        }
-
-                    val response = responseStream
-                        ?.bufferedReader()
-                        ?.use { it.readText() }
-                        ?: throw Exception("Empty translation response")
-
-                    if (responseCode !in 200..299) {
-                        throw Exception("Translation service error: $responseCode")
-                    }
-
-                    val json = JSONObject(response)
-
-                    val responseStatus = json.optInt(
-                        "responseStatus",
-                        0
-                    )
-
-                    if (responseStatus != 200) {
+                    if (textBytes.size > MAX_TRANSLATION_BYTES) {
                         throw Exception(
-                            json.optString(
-                                "responseDetails",
-                                "Translation unavailable"
-                            )
+                            "Text is too long. Please focus on a shorter text."
                         )
                     }
 
-                    val translated = json
-                        .optJSONObject("responseData")
-                        ?.optString("translatedText", "")
-                        ?.takeIf { it.isNotBlank() }
-                        ?: throw Exception("No translated text returned")
+                    val encodedText = URLEncoder.encode(
+                        originalText,
+                        "UTF-8"
+                    )
 
-                    val cleanTranslation =
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                            Html.fromHtml(
-                                translated,
-                                Html.FROM_HTML_MODE_LEGACY
-                            ).toString()
-                        } else {
-                            @Suppress("DEPRECATION")
-                            Html.fromHtml(translated).toString()
+                    val languagePair = "$sourceLanguage|si"
+
+                    val encodedPair = URLEncoder.encode(
+                        languagePair,
+                        "UTF-8"
+                    )
+
+                    val url = URL(
+                        "https://api.mymemory.translated.net/get" +
+                        "?q=$encodedText&langpair=$encodedPair"
+                    )
+
+                    val connection = url.openConnection()
+                        as HttpURLConnection
+
+                    connection.requestMethod = "GET"
+                    connection.connectTimeout = 10000
+                    connection.readTimeout = 10000
+
+                    connection.setRequestProperty(
+                        "User-Agent",
+                        "NETHA-X-ULTIMATE"
+                    )
+
+                    try {
+
+                        val responseCode = connection.responseCode
+
+                        val responseStream =
+                            if (responseCode in 200..299) {
+                                connection.inputStream
+                            } else {
+                                connection.errorStream
+                            }
+
+                        val response = responseStream
+                            ?.bufferedReader()
+                            ?.use { it.readText() }
+                            ?: throw Exception("Empty translation response")
+
+                        if (responseCode !in 200..299) {
+                            throw Exception(
+                                "Translation service error: $responseCode"
+                            )
                         }
+
+                        val json = JSONObject(response)
+
+                        val responseStatus = json.optInt(
+                            "responseStatus",
+                            0
+                        )
+
+                        if (responseStatus != 200) {
+                            throw Exception(
+                                json.optString(
+                                    "responseDetails",
+                                    "Translation unavailable"
+                                )
+                            )
+                        }
+
+                        val translated = json
+                            .optJSONObject("responseData")
+                            ?.optString("translatedText", "")
+                            ?.takeIf { it.isNotBlank() }
+                            ?: throw Exception("No translated text returned")
+
+                        val cleanTranslation =
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                Html.fromHtml(
+                                    translated,
+                                    Html.FROM_HTML_MODE_LEGACY
+                                ).toString()
+                            } else {
+                                @Suppress("DEPRECATION")
+                                Html.fromHtml(translated).toString()
+                            }
+
+                        lastTranslation = cleanTranslation
+
+                        sendTCResult(
+                            originalText,
+                            detectedLanguage,
+                            cleanTranslation,
+                            "Translation complete"
+                        )
+
+                    } finally {
+                        connection.disconnect()
+                    }
+
+                } catch (e: Exception) {
 
                     sendTCResult(
                         originalText,
                         detectedLanguage,
-                        cleanTranslation,
-                        "Translation complete"
+                        "",
+                        "Translation failed: ${e.message ?: "Check internet connection"}"
                     )
-
-                } finally {
-                    connection.disconnect()
                 }
-
-            } catch (e: Exception) {
-
-                sendTCResult(
-                    originalText,
-                    detectedLanguage,
-                    "",
-                    "Translation failed: ${e.message ?: "Check internet connection"}"
-                )
-            }
-        }
-    }
-
-    // Keep MyMemory request below its text-size limit
-    private fun limitUtf8Bytes(
-        text: String,
-        maxBytes: Int
-    ): String {
-
-        val result = StringBuilder()
-        var currentBytes = 0
-
-        for (character in text) {
-
-            val characterString = character.toString()
-            val characterBytes = characterString
-                .toByteArray(Charsets.UTF_8)
-                .size
-
-            if (currentBytes + characterBytes > maxBytes) {
-                break
             }
 
-            result.append(character)
-            currentBytes += characterBytes
-        }
+        } catch (e: Exception) {
 
-        return result.toString()
+            sendTCResult(
+                originalText,
+                detectedLanguage,
+                "",
+                "Translation failed: ${e.message ?: "Please try again"}"
+            )
+        }
     }
 
     // Send OCR and translation results to the webpage
@@ -674,7 +739,11 @@ class MainActivity : Activity() {
 
         isActivityDestroyed = true
 
-        pendingCameraRequest?.deny()
+        try {
+            pendingCameraRequest?.deny()
+        } catch (_: Exception) {
+        }
+
         pendingCameraRequest = null
 
         filePathCallback?.onReceiveValue(null)
@@ -682,15 +751,17 @@ class MainActivity : Activity() {
 
         translationExecutor.shutdownNow()
 
+        // Close only the ML Kit clients that were actually initialized.
+        textRecognizer?.close()
+        textRecognizer = null
+
+        languageIdentifier?.close()
+        languageIdentifier = null
+
         if (::webView.isInitialized) {
             webView.stopLoading()
             webView.removeJavascriptInterface("AndroidBridge")
             webView.destroy()
-        }
-
-        if (::webView.isInitialized) {
-            textRecognizer.close()
-            languageIdentifier.close()
         }
 
         super.onDestroy()
