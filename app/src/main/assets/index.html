@@ -1022,8 +1022,10 @@ function startMobileBoost(){
 
   moRequestRunning = true;
 
-  button.disabled = true;
-  button.textContent = "PLEASE WAIT...";
+  if (button) {
+    button.disabled = true;
+    button.textContent = "PLEASE WAIT...";
+  }
 
   setMobileOptimizerStatus(
     "Connecting to Android System Cache Cleaner..."
@@ -1037,8 +1039,10 @@ function startMobileBoost(){
 
     moRequestRunning = false;
 
-    button.disabled = false;
-    button.textContent = "⚡ START CACHE CLEANING";
+    if (button) {
+      button.disabled = false;
+      button.textContent = "⚡ START CACHE CLEANING";
+    }
 
     setMobileOptimizerStatus(
       "Unable to start: " + (error.message || "Unknown error")
@@ -1057,14 +1061,55 @@ window.onCacheClearStatus = function(result){
 
   const button = document.getElementById("moBoostButton");
 
-  button.disabled = false;
-  button.textContent = "⚡ START CACHE CLEANING";
-
-  if (typeof result !== "string") {
-    result = "Android returned an unknown response.";
+  if (button) {
+    button.disabled = false;
+    button.textContent = "⚡ START CACHE CLEANING";
   }
 
-  setMobileOptimizerStatus(result);
+  if (!result) {
+
+    setMobileOptimizerStatus(
+      "Android returned an empty response. Please try again."
+    );
+
+    return;
+
+  }
+
+  /* Support plain text responses */
+
+  if (typeof result === "string") {
+
+    setMobileOptimizerStatus(result);
+
+    return;
+
+  }
+
+  /* Read the JSON object sent by Kotlin */
+
+  if (typeof result === "object") {
+
+    const message =
+      typeof result.status === "string"
+        ? result.status
+        : "Android returned an unknown response.";
+
+    setMobileOptimizerStatus(message);
+
+    if (result.success === true) {
+      console.log("Mobile Optimizer: Android reported success.");
+    } else {
+      console.log("Mobile Optimizer: Further action may be required.");
+    }
+
+    return;
+
+  }
+
+  setMobileOptimizerStatus(
+    "Unable to read Android cache cleaner response."
+  );
 
 };
 
@@ -1489,7 +1534,7 @@ updateTCButtons();
   Use a secure backend for API requests.
 */
 
-const POOF_API_KEY = "PASTE_YOUR_NEW_POOF_API_KEY_HERE";
+const POOF_API_KEY = "pk_72b0ad9635e5e34d2554b77510745212";
 const POOF_API_URL = "https://api.poof.bg/v1/remove";
 
 
