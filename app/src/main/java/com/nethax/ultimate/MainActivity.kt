@@ -1,50 +1,37 @@
 package com.nethax.ultimate
 
+import android.Manifest
 import android.app.Activity
-import android.os.Bundle
-import android.content.Intent
 import android.content.ContentValues
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Base64
+import android.webkit.JavascriptInterface
+import android.webkit.PermissionRequest
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.webkit.WebChromeClient
-import android.webkit.ValueCallback
-import android.webkit.JavascriptInterface
 import android.widget.Toast
-import android.Manifest
-import android.content.pm.PackageManager
-import android.webkit.PermissionRequest
-import android.webkit.WebChromeClient
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
+import androidx.webkit.WebViewAssetLoader
 
 class MainActivity : Activity() {
 
     private lateinit var webView: WebView
+    private lateinit var assetLoader: WebViewAssetLoader
+
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
-private var pendingCameraRequest: PermissionRequest? = null
+    private var pendingCameraRequest: PermissionRequest? = null
 
-private val cameraPermissionLauncher =
-    registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-
-        val request = pendingCameraRequest
-        pendingCameraRequest = null
-
-        if (granted) {
-            request?.grant(
-                arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE)
-            )
-        } else {
-            request?.deny()
-        }
-    }
     companion object {
         private const val FILE_CHOOSER_REQUEST_CODE = 1001
+        private const val CAMERA_PERMISSION_REQUEST_CODE = 2001
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,7 +42,37 @@ private val cameraPermissionLauncher =
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
 
-        webView.webViewClient = WebViewClient()
+        // Load local HTML through a secure app asset URL
+        assetLoader = WebViewAssetLoader.Builder()
+            .addPathHandler(
+                "/assets/",
+                WebViewAssetLoader.AssetsPathHandler(this)
+            )
+            .build()
+
+        webView.webViewClient = object : WebViewClient() {
+
+            override fun shouldInterceptRequest(
+                view: WebView?,
+                request: WebResourceRequest?
+            ): WebResourceResponse? {
+
+                return request?.url?.let {
+                    assetLoader.shouldInterceptRequest(it)
+                }
+            }
+
+            @Suppress("DEPRECATION")
+            override fun shouldInterceptRequest(
+                view: WebView?,
+                url: String?
+            ): WebResourceResponse? {
+
+                return url?.let {
+                    assetLoader.shouldInterceptRequest(Uri.parse(it))
+                }
+            }
+        }
 
         // Android Gallery Download Bridge
         webView.addJavascriptInterface(
@@ -63,9 +80,67 @@ private val cameraPermissionLauncher =
             "AndroidBridge"
         )
 
-        // Android File Picker
+        // Camera Permission + Android File Picker
         webView.webChromeClient = object : WebChromeClient() {
 
+            override fun onPermissionRequest(
+                request: PermissionRequest
+            ) {
+                runOnUiThread {
+
+                    val trustedOrigin =
+                        request.origin.scheme == "https" &&
+                        request.origin.host == "appassets.androidplatform.net"
+
+                    val wantsCamera = request.resources.contains(
+                        PermissionRequest.RESOURCE_VIDEO_CAPTURE
+                    )
+
+                    if (!trustedOrigin || !wantsCamera) {
+                        request.deny()
+                        return@runOnUiThread
+                    }
+
+                    if (
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                        checkSelfPermission(Manifest.permission.CAMERA) !=
+                        PackageManager.PERMISSION_GRANTED
+                    ) {
+
+                        if (pendingCameraRequest != null) {
+                            request.deny()
+                            return@runOnUiThread
+                        }
+
+                        pendingCameraRequest = request
+
+                        requestPermissions(
+                            arrayOf(Manifest.permission.CAMERA),
+                            CAMERA_PERMISSION_REQUEST_CODE
+                        )
+
+                    } else {
+
+                        request.grant(
+                            arrayOf(
+                                PermissionRequest.RESOURCE_VIDEO_CAPTURE
+                            )
+                        )
+                    }
+                }
+            }
+
+            override fun onPermissionRequestCanceled(
+                request: PermissionRequest
+            ) {
+                runOnUiThread {
+                    if (pendingCameraRequest === request) {
+                        pendingCameraRequest = null
+                    }
+                }
+            }
+
+            // Existing Android File Picker
             override fun onShowFileChooser(
                 webView: WebView?,
                 callback: ValueCallback<Array<Uri>>?,
@@ -76,6 +151,7 @@ private val cameraPermissionLauncher =
                 filePathCallback = callback
 
                 return try {
+
                     val intent = params?.createIntent()
                         ?: Intent(Intent.ACTION_GET_CONTENT).apply {
                             addCategory(Intent.CATEGORY_OPENABLE)
@@ -90,6 +166,7 @@ private val cameraPermissionLauncher =
                     true
 
                 } catch (e: Exception) {
+
                     filePathCallback?.onReceiveValue(null)
                     filePathCallback = null
                     false
@@ -99,7 +176,46 @@ private val cameraPermissionLauncher =
 
         setContentView(webView)
 
-        webView.loadUrl("file:///android_asset/splash.html")
+        webView.loadUrl(
+            "https://appassets.androidplatform.net/assets/splash.html"
+        )
+    }
+
+    // Handle Android Camera Permission Result
+    @Deprecated("Deprecated in Java")
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(
+            requestCode,
+            permissions,
+            grantResults
+        )
+
+        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+
+            val request = pendingCameraRequest
+            pendingCameraRequest = null
+
+            if (request == null) return
+
+            if (
+                grantResults.isNotEmpty() &&
+                grantResults[0] == PackageManager.PERMISSION_GRANTED
+            ) {
+
+                request.grant(
+                    arrayOf(
+                        PermissionRequest.RESOURCE_VIDEO_CAPTURE
+                    )
+                )
+
+            } else {
+                request.deny()
+            }
+        }
     }
 
     // Save PNG directly to Android Gallery
@@ -126,20 +242,24 @@ private val cameraPermissionLauncher =
                 }
 
                 val values = ContentValues().apply {
+
                     put(
                         MediaStore.MediaColumns.DISPLAY_NAME,
                         "NETHA-${System.currentTimeMillis()}.png"
                     )
+
                     put(
                         MediaStore.MediaColumns.MIME_TYPE,
                         "image/png"
                     )
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+
                         put(
                             MediaStore.MediaColumns.RELATIVE_PATH,
                             "Pictures/NETHA X"
                         )
+
                         put(
                             MediaStore.MediaColumns.IS_PENDING,
                             1
@@ -159,6 +279,7 @@ private val cameraPermissionLauncher =
                     } ?: throw Exception("Cannot open image file")
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+
                         val completedValues = ContentValues().apply {
                             put(
                                 MediaStore.MediaColumns.IS_PENDING,
@@ -183,6 +304,7 @@ private val cameraPermissionLauncher =
                     }
 
                 } catch (e: Exception) {
+
                     contentResolver.delete(imageUri, null, null)
                     throw e
                 }
@@ -200,6 +322,7 @@ private val cameraPermissionLauncher =
         }
     }
 
+    // Existing File Picker Result
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(
         requestCode: Int,
@@ -211,10 +334,12 @@ private val cameraPermissionLauncher =
         if (requestCode == FILE_CHOOSER_REQUEST_CODE) {
 
             val result = if (resultCode == Activity.RESULT_OK) {
+
                 WebChromeClient.FileChooserParams.parseResult(
                     resultCode,
                     data
                 )
+
             } else {
                 null
             }
@@ -224,12 +349,30 @@ private val cameraPermissionLauncher =
         }
     }
 
+    // Back Button
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
+
         if (webView.canGoBack()) {
             webView.goBack()
         } else {
             super.onBackPressed()
         }
+    }
+
+    override fun onDestroy() {
+
+        pendingCameraRequest?.deny()
+        pendingCameraRequest = null
+
+        filePathCallback?.onReceiveValue(null)
+        filePathCallback = null
+
+        if (::webView.isInitialized) {
+            webView.stopLoading()
+            webView.destroy()
+        }
+
+        super.onDestroy()
     }
 }
