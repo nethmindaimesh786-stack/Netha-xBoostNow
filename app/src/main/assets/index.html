@@ -358,6 +358,182 @@ body{
   .welcome h1{font-size:25px}
   .container{padding:20px 15px 35px}
 }
+
+/* =====================================
+   NETHA X AUTO PREMIUM GLASS CARD SYSTEM
+===================================== */
+
+.nx-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.nx-feature-grid>* {
+  width: 100%;
+  max-width:160px;
+  justify-self: center;
+}
+
+/* AUTO DESIGN FOR EVERY FEATURE CARD */
+
+.nx-feature-grid > *{
+  min-width:0;
+  height:155px;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  padding:12px;
+  box-sizing:border-box;
+  text-align:center;
+  background:linear-gradient(
+    145deg,
+    rgba(155,92,255,.13),
+    rgba(0,207,255,.07)
+  ) !important;
+  border:1px solid rgba(155,92,255,.35) !important;
+  border-radius:19px !important;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  box-shadow:
+    0 8px 25px rgba(0,0,0,.25),
+    inset 0 1px 1px rgba(255,255,255,.07);
+  overflow:hidden;
+  isolation:isolate;
+  color:#fff;
+}
+
+.nx-feature-grid > *::before{
+  content:"";
+  position:absolute;
+  width:100px;
+  height:100px;
+  top:-55px;
+  right:-35px;
+  border-radius:50%;
+  background:#9b5cff;
+  filter:blur(45px);
+  opacity:.22;
+  pointer-events:none;
+}
+
+.nx-feature-grid > *::after{
+  content:"";
+  position:absolute;
+  width:90px;
+  height:90px;
+  bottom:-60px;
+  left:-35px;
+  border-radius:50%;
+  background:#00cfff;
+  filter:blur(40px);
+  opacity:.18;
+  pointer-events:none;
+}
+
+/* ICON */
+
+.nx-feature-icon{
+  width:49px;
+  height:49px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:15px;
+  font-size:25px;
+  background:linear-gradient(
+    145deg,
+    rgba(155,92,255,.25),
+    rgba(0,207,255,.13)
+  );
+  border:1px solid rgba(180,140,255,.3);
+  box-shadow:0 0 18px rgba(155,92,255,.16);
+  position:relative;
+  z-index:1;
+}
+
+/* TITLE */
+
+.nx-feature-grid h3{
+  font-size:12px;
+  font-weight:800;
+  color:#d6c3ff;
+  position:relative;
+  z-index:1;
+  margin:0;
+}
+
+/* DESCRIPTION */
+
+.nx-feature-grid p{
+  font-size:10px;
+  color:#aaa9c1;
+  line-height:1.4;
+  position:relative;
+  z-index:1;
+  margin:0;
+}
+
+/* OPEN LABEL */
+
+.nx-feature-open{
+  font-size:9px;
+  font-weight:bold;
+  letter-spacing:1.2px;
+  color:#35eaff;
+  position:relative;
+  z-index:1;
+}
+
+/* HOVER EFFECT */
+
+@media(hover:hover){
+  .nx-feature-grid > *:hover{
+    border-color:rgba(0,207,255,.55) !important;
+    box-shadow:
+      0 0 22px rgba(0,207,255,.13),
+      0 0 25px rgba(155,92,255,.13);
+  }
+}
+
+/* NETHA X COMPACT FEATURE CARDS */
+
+.nx-feature-grid{
+  gap:12px;
+}
+
+.nx-feature-grid > *{
+  height:155px;
+  padding:10px !important;
+  gap:7px;
+}
+
+.nx-feature-icon{
+  width:43px;
+  height:43px;
+  font-size:22px;
+  border-radius:13px;
+}
+
+.nx-feature-grid h3{
+  font-size:11px;
+}
+
+.nx-feature-grid p{
+  font-size:9px;
+}
+
+.nx-feature-open{
+  font-size:8px;
+}
+/* MOVE ONLY WELCOME CARD */
+.welcome {
+  transform: translateY(-30px);
+}
 </style>
 </head>
 
@@ -385,30 +561,27 @@ body{
     <p>Your next-level digital experience starts here.</p>
   </section>
 
-  <!-- BACKGROUND REMOVER TOOL CARD -->
+  
+<!-- NETHA X PREMIUM FEATURE CARDS -->
 
-  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%;">
+<div class="nx-feature-grid">
 
-    <div
-      class="nx-tap-card"
-      onclick="openBackgroundRemover()"
-      style="height:145px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;text-align:center;border:1px solid #9b5cff;border-radius:13px;background:linear-gradient(145deg,#171326,#0b1020);color:white;"
-    >
-      <div style="font-size:25px;">🌊</div>
-      <h3 style="font-size:12px;color:#b98aff;">AI Background Remover</h3>
-      <p style="font-size:10px;color:#aaa;">Remove photo background</p>
-      <span style="font-size:10px;color:#35eaff;">OPEN TOOL →</span>
-    </div>
+  <div class="nx-tap-card"
+       onclick="openBackgroundRemover()">
+    <div class="nx-feature-icon">✂️</div>
+    <h3>AI Background Remover</h3>
+    <p>Remove photo background</p>
+    <span class="nx-feature-open">OPEN TOOL →</span>
+  </div>
 
-    <div
-      class="nx-tap-card"
-      style="height:145px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;text-align:center;border:1px solid #9b5cff;border-radius:13px;background:linear-gradient(145deg,#171326,#0b1020);color:white;"
-    >
-      <div style="font-size:25px;">📁</div>
-      <h3 style="font-size:12px;color:#b98aff;">File Manager</h3>
-      <p style="font-size:10px;color:#aaa;">Manage your files</p>
-      <span style="font-size:10px;color:#35eaff;">OPEN TOOL →</span>
-    </div>
+  <div class="nx-tap-card">
+    <div class="nx-feature-icon">📁</div>
+    <h3>File Manager</h3>
+    <p>Manage your files</p>
+    <span class="nx-feature-open">OPEN TOOL →</span>
+  </div>
+
+  <!-- ADD FUTURE FEATURE CARDS BELOW -->
 
   </div>
 
@@ -733,18 +906,50 @@ async function startBGRemoval(){
 
 }
 
-function downloadBGResult(){
+
+async function downloadBGResult(){
 
   if(!bgResultURL) return;
 
-  const link=document.createElement("a");
-  link.href=bgResultURL;
-  link.download="NETHA-Background-Removed.png";
+  try{
 
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+    const response = await fetch(bgResultURL);
+    const blob = await response.blob();
 
+    const reader = new FileReader();
+
+    reader.onload = function(){
+
+      const dataUrl = reader.result;
+
+      if(
+        window.AndroidBridge &&
+        typeof window.AndroidBridge.saveImage === "function"
+      ){
+
+        window.AndroidBridge.saveImage(dataUrl);
+
+      }else{
+
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = "NETHA-Background-Removed.png";
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+      }
+    };
+
+    reader.readAsDataURL(blob);
+
+  }catch(error){
+
+    document.getElementById("bgMessage").textContent =
+      "Download failed: " + error.message;
+
+  }
 }
 
 </script>
