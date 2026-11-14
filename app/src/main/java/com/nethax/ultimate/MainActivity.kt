@@ -2,6 +2,7 @@ package com.nethax.ultimate
 
 import android.Manifest
 import android.app.Activity
+import android.app.ActivityOptions
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -51,7 +52,6 @@ class MainActivity : Activity() {
     private var languageIdentifier: LanguageIdentifier? = null
 
     private val translationExecutor = Executors.newSingleThreadExecutor()
-
     private val translationStateLock = Any()
 
     @Volatile
@@ -267,7 +267,6 @@ class MainActivity : Activity() {
         )
     }
 
-    // Handle camera permission.
     @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -302,7 +301,6 @@ class MainActivity : Activity() {
 
     inner class AndroidBridge {
 
-        // Request real Android device cache cleanup.
         @JavascriptInterface
         fun requestCacheClear() {
 
@@ -350,13 +348,11 @@ class MainActivity : Activity() {
             }
         }
 
-        // Reset translation and activate a new camera session.
         @JavascriptInterface
         fun resetTranslation(sessionId: Int) {
             resetTranslationState(sessionId)
         }
 
-        // Save PNG to Gallery.
         @JavascriptInterface
         fun saveImage(dataUrl: String) {
 
@@ -458,7 +454,6 @@ class MainActivity : Activity() {
             }
         }
 
-        // Receive camera frame and process OCR for a specific session.
         @JavascriptInterface
         fun processTranslationFrame(
             dataUrl: String,
@@ -681,10 +676,25 @@ class MainActivity : Activity() {
                 StorageManager.ACTION_CLEAR_APP_CACHE
             )
 
-            startActivityForResult(
-                clearIntent,
-                CACHE_CLEAR_REQUEST_CODE
-            )
+            if (Build.VERSION.SDK_INT >= 34) {
+
+                val options = ActivityOptions.makeBasic()
+                    .setShareIdentityEnabled(true)
+                    .toBundle()
+
+                startActivityForResult(
+                    clearIntent,
+                    CACHE_CLEAR_REQUEST_CODE,
+                    options
+                )
+
+            } else {
+
+                startActivityForResult(
+                    clearIntent,
+                    CACHE_CLEAR_REQUEST_CODE
+                )
+            }
 
             sendCacheClearStatus(
                 "Android system cache cleanup confirmation opened.",
@@ -700,7 +710,6 @@ class MainActivity : Activity() {
         }
     }
 
-    // Send cache cleanup status to the HTML interface.
     private fun sendCacheClearStatus(
         status: String,
         success: Boolean
@@ -727,7 +736,6 @@ class MainActivity : Activity() {
         }
     }
 
-    // Translate detected text into Sinhala using MyMemory.
     private fun translateToSinhala(
         originalText: String,
         detectedLanguage: String,
@@ -934,7 +942,6 @@ class MainActivity : Activity() {
         }
     }
 
-    // Send results only if the original camera session is still active.
     private fun sendTCResult(
         text: String,
         language: String,
@@ -1041,7 +1048,7 @@ class MainActivity : Activity() {
 
                     else -> {
                         sendCacheClearStatus(
-                            "Cache cleanup was cancelled. No completion was confirmed.",
+                            "Android did not confirm cache cleanup. The system may have cancelled the request or the operation may not have started.",
                             false
                         )
                     }
