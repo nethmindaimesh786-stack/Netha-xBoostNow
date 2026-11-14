@@ -268,6 +268,13 @@ class MainActivity : Activity() {
 
     inner class AndroidBridge {
 
+// Reset previous translation when camera starts again
+@JavascriptInterface
+fun resetTranslation() {
+    lastProcessedText = ""
+    lastDetectedLanguage = ""
+    lastTranslation = ""
+}       
         // Save PNG to Gallery
         @JavascriptInterface
         fun saveImage(dataUrl: String) {
