@@ -1,4 +1,4 @@
-HTML
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -705,9 +705,7 @@ position:relative;
 overflow:hidden
 }
 
-.mo-clean-animation.active{
-display:flex
-}
+.mo-clean-animation.active{display:flex}
 
 .mo-energy-core{
 width:105px;
@@ -861,17 +859,10 @@ filter:drop-shadow(0 0 12px #ff5265)
 animation:none
 }
 
-.mo-clean-animation.error .mo-clean-title{
-color:#ff7180
-}
+.mo-clean-animation.error .mo-clean-title{color:#ff7180}
 
-@keyframes moCoreSpin{
-to{transform:rotate(360deg)}
-}
-
-@keyframes moOuterSpin{
-to{transform:rotate(-360deg)}
-}
+@keyframes moCoreSpin{to{transform:rotate(360deg)}}
+@keyframes moOuterSpin{to{transform:rotate(-360deg)}}
 
 @keyframes moIconPulse{
 0%,100%{transform:scale(.92);opacity:.8}
@@ -895,9 +886,407 @@ to{transform:rotate(-360deg)}
 .mo-energy-ring,
 .mo-energy-icon,
 .mo-scan-beam,
+.mo-progress-bar{animation:none!important}
+}
+
+/* EXISTING GLOBAL APP ANIMATION */
+
+body{
+background-size:200% 200%;
+animation:nxBackgroundFlow 16s ease-in-out infinite alternate;
+}
+
+@keyframes nxBackgroundFlow{
+0%{background-position:0% 0%}
+100%{background-position:100% 100%}
+}
+
+.background-glow{
+animation:nxAmbientFloat 9s ease-in-out infinite alternate;
+will-change:transform,opacity;
+}
+
+.glow-two{animation-delay:-4.5s}
+
+@keyframes nxAmbientFloat{
+0%{transform:translate3d(0,0,0) scale(.9);opacity:.16}
+50%{opacity:.3}
+100%{transform:translate3d(35px,-25px,0) scale(1.15);opacity:.24}
+}
+
+.logo{animation:nxLogoGlow 3s ease-in-out infinite}
+.brand-name{animation:nxTextGlow 4s ease-in-out infinite}
+.status{animation:nxStatusPulse 1.8s ease-in-out infinite}
+
+@keyframes nxLogoGlow{
+0%,100%{box-shadow:0 0 14px #853cff55}
+50%{box-shadow:0 0 28px #00cfff99,0 0 42px #853cff55}
+}
+
+@keyframes nxTextGlow{
+0%,100%{text-shadow:0 0 0 transparent}
+50%{text-shadow:0 0 12px #00cfff65}
+}
+
+@keyframes nxStatusPulse{
+0%,100%{transform:scale(1);opacity:.75}
+50%{transform:scale(1.25);opacity:1}
+}
+
+.welcome{animation:nxWelcomeFloat 6s ease-in-out infinite}
+.welcome::after{animation:nxWelcomeOrbit 12s linear infinite}
+
+@keyframes nxWelcomeFloat{
+0%,100%{box-shadow:0 12px 40px #0005,inset 0 0 25px #8d4dff12}
+50%{box-shadow:0 16px 45px #0007,0 0 22px #00cfff20,inset 0 0 30px #8d4dff25}
+}
+
+@keyframes nxWelcomeOrbit{to{transform:rotate(360deg)}}
+
+.nx-feature-grid>*{animation:nxCardGlow 5s ease-in-out infinite}
+.nx-feature-grid>*:nth-child(2){animation-delay:1.2s}
+.nx-feature-grid>*:nth-child(3){animation-delay:2.4s}
+.nx-feature-icon{animation:nxIconFloat 3.5s ease-in-out infinite}
+
+@keyframes nxCardGlow{
+0%,100%{
+border-color:rgba(155,92,255,.35)!important;
+box-shadow:0 8px 25px rgba(0,0,0,.25),inset 0 1px 1px rgba(255,255,255,.07);
+}
+50%{
+border-color:rgba(0,207,255,.65)!important;
+box-shadow:0 0 18px rgba(0,207,255,.13),0 8px 25px rgba(0,0,0,.25);
+}
+}
+
+@keyframes nxIconFloat{
+0%,100%{transform:translateY(0)}
+50%{transform:translateY(-4px)}
+}
+
+button{
+background-size:200% 200%!important;
+animation:nxButtonFlow 5s ease-in-out infinite;
+}
+
+@keyframes nxButtonFlow{
+0%,100%{background-position:0% 50%}
+50%{background-position:100% 50%}
+}
+
+.section-title{animation:nxSectionGlow 4s ease-in-out infinite}
+.visual-panel{animation:nxPanelGlow 5s ease-in-out infinite}
+.visual-ring{animation:pulse 3s ease-in-out infinite,nxRingColor 6s linear infinite}
+
+@keyframes nxRingColor{
+0%,100%{border-color:#00d9ff80}
+50%{border-color:#a855f7b0}
+}
+
+@keyframes nxSectionGlow{
+0%,100%{color:#aaa2c4}
+50%{color:#55eaff}
+}
+
+@keyframes nxPanelGlow{
+0%,100%{box-shadow:0 10px 35px #0004}
+50%{box-shadow:0 10px 35px #0004,0 0 22px #00cfff20}
+}
+
+.tc-panel,.bg-panel,.mo-panel{
+animation:nxPopupEnter .35s cubic-bezier(.2,.75,.25,1) both;
+}
+
+@keyframes nxPopupEnter{
+from{opacity:0;transform:translateY(18px) scale(.97)}
+to{opacity:1;transform:translateY(0) scale(1)}
+}
+
+/* =========================================
+   PURPLE + BLUE ULTRA SMOOTH FLOW THEME
+========================================= */
+
+body{
+background-color:#070713;
+background-image:
+radial-gradient(ellipse at 15% 10%,rgba(45,20,95,.72) 0%,transparent 42%),
+radial-gradient(ellipse at 90% 80%,rgba(5,43,82,.65) 0%,transparent 42%),
+linear-gradient(
+110deg,
+#0b0a19 0%,
+#1b1238 25%,
+#172044 50%,
+#142b48 75%,
+#0b0a19 100%
+);
+background-size:100% 100%,100% 100%,350% 100%;
+background-position:center,center,100% 50%;
+background-repeat:no-repeat;
+animation:nxWaterBackground 30s ease-in-out infinite alternate;
+}
+
+@keyframes nxWaterBackground{
+0%{background-position:center,center,100% 50%}
+100%{background-position:center,center,0% 50%}
+}
+
+@keyframes nxWaterFlow{
+0%{background-position:100% 50%}
+100%{background-position:0% 50%}
+}
+
+@keyframes nxWaterBorder{
+0%,100%{border-color:rgba(155,92,255,.42)}
+50%{border-color:rgba(0,207,255,.42)}
+}
+
+.welcome{
+background-image:linear-gradient(
+110deg,
+rgba(36,21,65,.94),
+rgba(27,28,69,.94),
+rgba(20,38,70,.94),
+rgba(36,21,65,.94)
+);
+background-size:350% 100%;
+animation:
+nxWelcomeFloat 6s ease-in-out infinite,
+nxWaterFlow 30s ease-in-out infinite alternate,
+nxWaterBorder 30s ease-in-out infinite alternate;
+}
+
+.nx-feature-grid>*{
+background-image:linear-gradient(
+145deg,
+rgba(155,92,255,.13),
+rgba(0,207,255,.07)
+)!important;
+background-size:auto!important;
+animation:none!important;
+border-color:rgba(155,92,255,.35)!important;
+}
+
+.nx-feature-grid>*:nth-child(2),
+.nx-feature-grid>*:nth-child(3){
+animation:none!important;
+}
+
+.nx-feature-icon{
+background-image:linear-gradient(
+145deg,
+rgba(155,92,255,.25),
+rgba(0,207,255,.13)
+)!important;
+background-size:auto!important;
+animation:none!important;
+}
+
+.nx-feature-grid h3{
+color:#d6c3ff!important;
+animation:none!important
+}
+
+.nx-feature-open{
+color:#35eaff!important;
+animation:none!important
+}
+
+button{
+background-image:linear-gradient(
+110deg,
+#873dff,
+#397dff,
+#00cfff,
+#397dff,
+#873dff
+)!important;
+background-size:350% 100%!important;
+animation:nxWaterFlow 30s ease-in-out infinite alternate;
+}
+
+.logo{
+background-image:linear-gradient(
+110deg,
+#8b35ff,
+#397dff,
+#00cfff,
+#397dff,
+#8b35ff
+);
+background-size:350% 100%;
+animation:
+nxLogoGlow 3s ease-in-out infinite,
+nxWaterFlow 30s ease-in-out infinite alternate;
+}
+
+.brand-name{
+animation:nxTextGlow 4s ease-in-out infinite
+}
+
+.welcome-label,
+.tc-title,
+.tc-label,
+.mo-title{
+animation:nxWaterText 30s ease-in-out infinite alternate
+}
+
+@keyframes nxWaterText{
+0%,100%{color:#b99aff}
+50%{color:#82cfff}
+}
+
+.visual-panel{
+background-image:linear-gradient(
+110deg,
+#17102e,
+#19234a,
+#15314d,
+#17102e
+);
+background-size:350% 100%;
+animation:
+nxPanelGlow 5s ease-in-out infinite,
+nxWaterFlow 30s ease-in-out infinite alternate,
+nxWaterBorder 30s ease-in-out infinite alternate;
+}
+
+.visual-ring{
+animation:
+pulse 3s ease-in-out infinite,
+nxWaterBorder 30s ease-in-out infinite alternate
+}
+
+.visual-text,
+.welcome h1 span{
+background-image:linear-gradient(
+90deg,
+#b77aff,
+#8196ff,
+#65dfff,
+#8196ff,
+#b77aff
+);
+background-size:350% 100%;
+background-position:100% 50%;
+-webkit-background-clip:text;
+background-clip:text;
+color:transparent;
+animation:nxWaterFlow 30s ease-in-out infinite alternate
+}
+
+.tc-panel,
+.bg-panel,
+.mo-panel{
+background-image:linear-gradient(
+110deg,
+#17102d,
+#192347,
+#153149,
+#17102d
+);
+background-size:350% 100%;
+animation:
+nxPopupEnter .35s cubic-bezier(.2,.75,.25,1) both,
+nxWaterFlow 30s ease-in-out infinite alternate,
+nxWaterBorder 30s ease-in-out infinite alternate;
+}
+
+.tc-camera,
+.tc-result,
+.mo-status-card,
+.mo-info{
+background-image:linear-gradient(
+110deg,
+rgba(25,17,49,.96),
+rgba(22,35,69,.96),
+rgba(16,43,67,.96),
+rgba(25,17,49,.96)
+);
+background-size:350% 100%;
+animation:
+nxWaterFlow 30s ease-in-out infinite alternate,
+nxWaterBorder 30s ease-in-out infinite alternate;
+}
+
+.tc-panel,
+.bg-panel,
+.mo-panel,
+.tc-camera,
+.tc-result,
+.mo-status-card,
+.mo-info{
+border-color:#9b5cff
+}
+
+.footer{
+animation:nxFooterColor 30s ease-in-out infinite alternate
+}
+
+@keyframes nxFooterColor{
+0%,100%{color:#aaa2c4}
+50%{color:#83cfff}
+}
+
+.mo-clean-animation.success .mo-clean-title{
+color:#00ffae
+}
+
+.mo-clean-animation.error .mo-clean-title{
+color:#ff7180
+}
+
+@media(prefers-reduced-motion:reduce){
+body,
+.welcome,
+button,
+.logo,
+.visual-panel,
+.visual-ring,
+.tc-panel,
+.bg-panel,
+.mo-panel,
+.tc-camera,
+.tc-result,
+.mo-status-card,
+.mo-info,
+.welcome-label,
+.tc-title,
+.tc-label,
+.mo-title,
+.visual-text,
+.welcome h1 span,
+.footer{
+animation:none!important
+}
+
+.mo-clean-animation,
+.mo-energy-core,
+.mo-energy-ring,
+.mo-scan-beam,
 .mo-progress-bar{
 animation:none!important
 }
+}
+
+/* LIGHTWEIGHT PERFORMANCE IMPROVEMENTS */
+
+/* Avoid unnecessary redraw work on animated elements */
+.logo,
+.status,
+.visual-ring,
+.visual-text,
+.mo-energy-core,
+.mo-energy-ring,
+.mo-energy-icon,
+.mo-scan-beam,
+.mo-progress-bar{
+-webkit-backface-visibility:hidden;
+backface-visibility:hidden
+}
+
+/* Keep tap ripple count limited */
+.nx-ripple{
+will-change:transform,opacity
 }
 
 </style>
@@ -964,7 +1353,6 @@ animation:none!important
 
 </main>
 
-
 <!-- TRANSLATION CAMERA POPUP -->
 
 <div id="translationCamera">
@@ -1004,7 +1392,6 @@ animation:none!important
 
   </div>
 </div>
-
 
 <!-- BACKGROUND REMOVER POPUP -->
 
@@ -1050,7 +1437,6 @@ animation:none!important
   </div>
 </div>
 
-
 <!-- MOBILE OPTIMIZER POPUP -->
 
 <div id="mobileOptimizer">
@@ -1068,8 +1454,6 @@ animation:none!important
         Ready to start system cache cleaning.
       </div>
     </div>
-
-    <!-- PREMIUM ULTRA GLOW CLEANING ANIMATION -->
 
     <div class="mo-clean-animation" id="moCleanAnimation">
 
@@ -1115,9 +1499,7 @@ animation:none!important
   </div>
 </div>
 
-
 <script>
-
 /* DASHBOARD ENTRANCE ANIMATION */
 
 (function startDashboardEntrance(){
@@ -1137,13 +1519,13 @@ animation:none!important
 
 })();
 
-
-/* GLOBAL TAP ANIMATION ENGINE */
+/* OPTIMIZED GLOBAL TAP ANIMATION ENGINE */
 
 const NX_TAP_SELECTOR =
   'button, a, [onclick], [role="button"], .nx-tap-card';
 
 let nxActiveTapTarget = null;
+const NX_MAX_RIPPLES = 2;
 
 document.addEventListener("pointerdown", function(event){
 
@@ -1164,6 +1546,21 @@ document.addEventListener("pointerdown", function(event){
 
   target.classList.add("nx-tap-target", "nx-pressed");
 
+  if (
+    window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    return;
+  }
+
+  /* Remove old ripples before creating another one */
+  const oldRipples = target.querySelectorAll(".nx-ripple");
+
+  while (oldRipples.length >= NX_MAX_RIPPLES) {
+    oldRipples[0].remove();
+    break;
+  }
+
   const rect = target.getBoundingClientRect();
   const diameter = Math.max(rect.width, rect.height) * 2;
 
@@ -1181,9 +1578,10 @@ document.addEventListener("pointerdown", function(event){
 
   target.appendChild(ripple);
 
-  window.setTimeout(function(){
+  /* Remove ripple as soon as its CSS animation finishes */
+  ripple.addEventListener("animationend", function(){
     ripple.remove();
-  }, 650);
+  }, {once:true});
 
 });
 
@@ -1200,12 +1598,15 @@ document.addEventListener("pointerup", nxReleaseTapTarget);
 document.addEventListener("pointercancel", nxReleaseTapTarget);
 window.addEventListener("blur", nxReleaseTapTarget);
 
-
-/* =================================
-   MOBILE OPTIMIZER - ULTRA GLOW
-================================= */
+/* MOBILE OPTIMIZER - ULTRA GLOW
+   MINIMUM 5 SECOND ANIMATION */
 
 let moRequestRunning = false;
+let moRequestStartedAt = 0;
+let moPendingResult = null;
+let moMinDurationTimer = null;
+
+const MO_MIN_ANIMATION_TIME = 5000;
 
 const moAnimation = document.getElementById("moCleanAnimation");
 const moEnergyIcon = document.getElementById("moEnergyIcon");
@@ -1315,12 +1716,98 @@ function finishMORequest(){
 
   moRequestRunning = false;
 
+  moPendingResult = null;
+
+  if (moMinDurationTimer !== null) {
+
+    clearTimeout(moMinDurationTimer);
+
+    moMinDurationTimer = null;
+
+  }
+
   const button = document.getElementById("moBoostButton");
 
   if (button) {
+
     button.disabled = false;
+
     button.textContent = "⚡ START CACHE CLEANING";
+
   }
+
+}
+
+function tryFinishMORequest(){
+
+  if (!moRequestRunning) return;
+
+  if (!moPendingResult) return;
+
+  const elapsed = Date.now() - moRequestStartedAt;
+
+  const remaining = MO_MIN_ANIMATION_TIME - elapsed;
+
+  if (remaining > 0) {
+
+    if (moMinDurationTimer !== null) {
+      clearTimeout(moMinDurationTimer);
+    }
+
+    moMinDurationTimer = setTimeout(function(){
+
+      moMinDurationTimer = null;
+
+      tryFinishMORequest();
+
+    }, remaining);
+
+    return;
+
+  }
+
+  const finalResult = moPendingResult;
+
+  finishMORequest();
+
+  if (finalResult.success) {
+
+    showMOSuccess();
+
+    setMobileOptimizerStatus(finalResult.message);
+
+    console.log(
+      "Mobile Optimizer: Android reported cache cleanup completed."
+    );
+
+  } else {
+
+    showMOError();
+
+    setMobileOptimizerStatus(finalResult.message);
+
+    console.log(
+      "Mobile Optimizer: Android did not confirm cache cleanup."
+    );
+
+  }
+
+}
+
+function receiveMOFinalResult(success,message){
+
+  if (!moRequestRunning) return;
+
+  moPendingResult = {
+    success:success === true,
+    message:message || (
+      success
+        ? "Android reported cache cleanup completed."
+        : "Android did not confirm cache cleanup."
+    )
+  };
+
+  tryFinishMORequest();
 
 }
 
@@ -1345,9 +1832,24 @@ function startMobileBoost(){
 
   moRequestRunning = true;
 
+  moRequestStartedAt = Date.now();
+
+  moPendingResult = null;
+
+  if (moMinDurationTimer !== null) {
+
+    clearTimeout(moMinDurationTimer);
+
+    moMinDurationTimer = null;
+
+  }
+
   if (button) {
+
     button.disabled = true;
+
     button.textContent = "PLEASE WAIT...";
+
   }
 
   startMOAnimation();
@@ -1365,11 +1867,8 @@ function startMobileBoost(){
 
   } catch(error) {
 
-    finishMORequest();
-
-    showMOError();
-
-    setMobileOptimizerStatus(
+    receiveMOFinalResult(
+      false,
       "Unable to start: " + (error.message || "Unknown error")
     );
 
@@ -1377,18 +1876,16 @@ function startMobileBoost(){
 
 }
 
-
-/* NATIVE ANDROID CACHE CLEANER RESULT */
-
 window.onCacheClearStatus = function(result){
+
+  if (!moRequestRunning) {
+    return;
+  }
 
   if (!result) {
 
-    finishMORequest();
-
-    showMOError();
-
-    setMobileOptimizerStatus(
+    receiveMOFinalResult(
+      false,
       "Android returned an empty response. Please try again."
     );
 
@@ -1396,23 +1893,16 @@ window.onCacheClearStatus = function(result){
 
   }
 
-  /* SUPPORT PLAIN TEXT RESPONSES */
-
   if (typeof result === "string") {
 
-    setMobileOptimizerStatus(result);
-
     const lowerMessage = result.toLowerCase();
-
-    /*
-      Keep animation active when Android has only opened
-      its confirmation screen.
-    */
 
     if (
       lowerMessage.includes("confirmation opened") ||
       lowerMessage.includes("confirmation screen")
     ) {
+
+      setMobileOptimizerStatus(result);
 
       moCleanTitle.textContent = "AWAITING CONFIRMATION";
 
@@ -1423,9 +1913,7 @@ window.onCacheClearStatus = function(result){
 
     }
 
-    finishMORequest();
-
-    showMOError();
+    receiveMOFinalResult(false,result);
 
     return;
 
@@ -1433,11 +1921,8 @@ window.onCacheClearStatus = function(result){
 
   if (typeof result !== "object") {
 
-    finishMORequest();
-
-    showMOError();
-
-    setMobileOptimizerStatus(
+    receiveMOFinalResult(
+      false,
       "Unable to read Android cache cleaner response."
     );
 
@@ -1450,14 +1935,7 @@ window.onCacheClearStatus = function(result){
       ? result.status
       : "Android returned an unknown response.";
 
-  setMobileOptimizerStatus(message);
-
   const lowerMessage = message.toLowerCase();
-
-  /*
-    Android first reports that the system confirmation
-    screen has opened. This is not the final result.
-  */
 
   if (
     result.success !== true &&
@@ -1466,6 +1944,8 @@ window.onCacheClearStatus = function(result){
       lowerMessage.includes("confirmation screen")
     )
   ) {
+
+    setMobileOptimizerStatus(message);
 
     moCleanTitle.textContent = "AWAITING CONFIRMATION";
 
@@ -1476,32 +1956,14 @@ window.onCacheClearStatus = function(result){
 
   }
 
-  finishMORequest();
-
-  if (result.success === true) {
-
-    showMOSuccess();
-
-    console.log(
-      "Mobile Optimizer: Android reported cache cleanup completed."
-    );
-
-  } else {
-
-    showMOError();
-
-    console.log(
-      "Mobile Optimizer: Android did not confirm cache cleanup."
-    );
-
-  }
+  receiveMOFinalResult(
+    result.success === true,
+    message
+  );
 
 };
 
-
-/* =================================
-   TRANSLATION CAMERA + NATIVE OCR
-================================= */
+/* TRANSLATION CAMERA + NATIVE OCR */
 
 let tcStream = null;
 let tcStarting = false;
@@ -1561,16 +2023,18 @@ function resetNativeTranslationSession(){
   ) {
 
     try {
+
       AndroidBridge.resetTranslation(tcSessionId);
 
     } catch(error) {
+
       console.error("Translation session reset failed:", error);
+
     }
 
   }
 
 }
-
 
 async function startTranslationCamera(){
 
@@ -1614,10 +2078,13 @@ async function startTranslationCamera(){
   try {
 
     const stream = await navigator.mediaDevices.getUserMedia({
+
       video:{
         facingMode:{ideal:"environment"}
       },
+
       audio:false
+
     });
 
     if (
@@ -1644,7 +2111,9 @@ async function startTranslationCamera(){
       requestId !== tcRequestId ||
       currentSessionId !== tcSessionId
     ) {
+
       return;
+
     }
 
     tcStarting = false;
@@ -1747,8 +2216,7 @@ async function startTranslationCamera(){
 
 }
 
-
-/* CAPTURE CAMERA FRAME AND SEND TO ANDROID */
+/* OPTIMIZED CAMERA FRAME CAPTURE */
 
 function captureTranslationFrame(){
 
@@ -1784,8 +2252,19 @@ function captureTranslationFrame(){
 
   const scale = Math.min(1, 720 / originalWidth);
 
-  tcCanvas.width = Math.round(originalWidth * scale);
-  tcCanvas.height = Math.round(originalHeight * scale);
+  const width = Math.round(originalWidth * scale);
+  const height = Math.round(originalHeight * scale);
+
+  /* Resize canvas only when the actual dimensions change */
+  if (
+    tcCanvas.width !== width ||
+    tcCanvas.height !== height
+  ) {
+
+    tcCanvas.width = width;
+    tcCanvas.height = height;
+
+  }
 
   try {
 
@@ -1793,8 +2272,8 @@ function captureTranslationFrame(){
       tcVideo,
       0,
       0,
-      tcCanvas.width,
-      tcCanvas.height
+      width,
+      height
     );
 
     const imageData = tcCanvas.toDataURL(
@@ -1822,9 +2301,6 @@ function captureTranslationFrame(){
   }
 
 }
-
-
-/* RECEIVE OCR AND TRANSLATION FROM KOTLIN */
 
 window.onTCNativeResult = function(result){
 
@@ -1858,9 +2334,6 @@ window.onTCNativeResult = function(result){
   }
 
 };
-
-
-/* STOP CAMERA */
 
 function stopTranslationCamera(){
 
@@ -1908,10 +2381,7 @@ function stopTranslationCamera(){
 
 updateTCButtons();
 
-
-/* =================================
-   BACKGROUND REMOVER API SETTINGS
-================================= */
+/* BACKGROUND REMOVER API SETTINGS */
 
 /*
   Keep API credentials private.
@@ -1922,10 +2392,7 @@ updateTCButtons();
 const POOF_API_KEY = "PASTE_YOUR_NEW_POOF_API_KEY_HERE";
 const POOF_API_URL = "https://api.poof.bg/v1/remove";
 
-
-/* =================================
-   BACKGROUND REMOVER SYSTEM
-================================= */
+/* BACKGROUND REMOVER SYSTEM */
 
 let bgResultURL = null;
 let bgPreviewURL = null;
@@ -2000,9 +2467,6 @@ function previewBGPhoto(event){
   message.textContent = "Photo selected successfully!";
 
 }
-
-
-/* REMOVE BACKGROUND USING POOF API */
 
 async function startBGRemoval(){
 
@@ -2208,9 +2672,6 @@ async function startBGRemoval(){
 
 }
 
-
-/* DOWNLOAD BACKGROUND RESULT */
-
 async function downloadBGResult(){
 
   if (!bgResultURL) return;
@@ -2267,7 +2728,6 @@ async function downloadBGResult(){
 
 }
 
-
 /* CLOSE POPUPS WITH ESCAPE KEY */
 
 document.addEventListener("keydown", function(event){
@@ -2283,7 +2743,6 @@ document.addEventListener("keydown", function(event){
   }
 
 });
-
 
 /* STOP CAMERA WHEN PAGE IS UNLOADED */
 
