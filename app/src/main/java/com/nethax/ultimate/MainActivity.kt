@@ -59,6 +59,9 @@ class MainActivity : Activity() {
     private var lastTranslation = ""
 
     @Volatile
+private var activeTranslationSessionId = 0
+   
+    @Volatile
     private var isActivityDestroyed = false
 
     companion object {
