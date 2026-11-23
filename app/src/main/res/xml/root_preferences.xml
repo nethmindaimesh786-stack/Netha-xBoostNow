@@ -58,45 +58,26 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="@string/about" >
+    <PreferenceCategory android:title="@string/about">
         <Preference
-            app:icon="@drawable/baseline_exit_to_app_24"
-            app:key="package_name"
-            app:title="@string/package_name" />
-        <Preference
-            app:icon="@drawable/ic_discord"
-            app:key="discord"
-            app:summary="https://discord.gg/WW3KYWxAPm"
-            app:title="Discord">
-            <intent
-                android:action="android.intent.action.VIEW"
-                android:data="https://discord.gg/WW3KYWxAPm" />
-        </Preference>
+            app:icon="@drawable/ic_info"
+            app:key="developer_name"
+            app:title="Developer"
+            app:summary="Imesh Nethminda" />
 
         <Preference
-            app:icon="@drawable/ic_telegram"
-            app:key="telegram"
-            app:summary="https://t.me/ytdlnis"
-            app:title="Telegram">
-            <intent
-                android:action="android.intent.action.VIEW"
-                android:data="https://t.me/ytdlnis" />
-        </Preference>
+            app:icon="@drawable/ic_info"
+            app:key="app_version"
+            app:title="App version" />
 
         <Preference
-            app:icon="@drawable/ic_translate"
-            app:key="translators"
-            app:summary="@string/translators_summary"
-            app:title="@string/translators" />
-
-        <Preference
-            app:icon="@drawable/baseline_security_24"
-            app:key="security"
-            app:summary="🔐 YTDLnis - Privacy Policy"
-            app:title="@string/security">
+            app:icon="@drawable/ic_code"
+            app:key="original_project"
+            app:title="Original open-source project"
+            app:summary="YTDLnis by Denis Cerri">
             <intent
                 android:action="android.intent.action.VIEW"
-                android:data="https://github.com/deniscerri/ytdlnis/blob/main/SECURITY.md" />
+                android:data="https://github.com/deniscerri/ytdlnis" />
         </Preference>
 
         <Preference
@@ -110,17 +91,14 @@
         </Preference>
 
         <Preference
-            app:icon="@drawable/ic_code"
-            app:key="rreth"
-            app:summary="https://github.com/deniscerri/ytdlnis"
-            app:allowDividerBelow="true"
-            app:title="@string/source_code">
+            app:icon="@drawable/baseline_security_24"
+            app:key="original_security"
+            app:summary="Original project privacy and security information"
+            app:title="Privacy & security">
             <intent
                 android:action="android.intent.action.VIEW"
-                android:data="https://github.com/deniscerri/ytdlnis" />
+                android:data="https://github.com/deniscerri/ytdlnis/blob/main/SECURITY.md" />
         </Preference>
-
-
     </PreferenceCategory>
 
 
