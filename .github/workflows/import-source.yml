@@ -22,7 +22,7 @@ jobs:
         shell: bash
         run: |
           python3 - <<'PY'
-          import zipfile, pathlib, shutil, tempfile, os
+          import zipfile, pathlib, shutil, tempfile
           archive = pathlib.Path("NethaDownloder-main.zip")
           if not archive.exists():
               raise SystemExit("NethaDownloder-main.zip was not found in the repository root")
@@ -35,20 +35,38 @@ jobs:
           source = temp / next(iter(roots))
           if not (source / "settings.gradle").exists() or not (source / "app" / "build.gradle").exists():
               raise SystemExit("ZIP does not contain the expected Android Gradle project")
+
+          # Clear the old project completely, preserving this importer workflow and the archive.
+          root = pathlib.Path(".")
+          workflow = pathlib.Path(".github/workflows/import-source.yml")
+          workflow_bytes = workflow.read_bytes()
+          for item in root.iterdir():
+              if item.name in {".git", "NethaDownloder-main.zip"}:
+                  continue
+              if item.name == ".github":
+                  shutil.rmtree(item)
+              elif item.is_dir():
+                  shutil.rmtree(item)
+              else:
+                  item.unlink()
+          workflow.parent.mkdir(parents=True, exist_ok=True)
+          workflow.write_bytes(workflow_bytes)
+
           excluded = {".idea", ".kotlin", ".gradle", "build"}
           for item in source.iterdir():
-              if item.name in excluded:
+              if item.name in excluded or item.name == ".github":
                   continue
-              dest = pathlib.Path(item.name)
-              if dest.is_dir():
-                  if dest.name == ".github" and dest.exists():
-                      shutil.copytree(item, dest, dirs_exist_ok=True, ignore=shutil.ignore_patterns("*.log"))
-                  else:
-                      if dest.exists():
-                          shutil.rmtree(dest)
-                      shutil.copytree(item, dest, ignore=shutil.ignore_patterns("*.log"))
+              dest = root / item.name
+              if item.is_dir():
+                  shutil.copytree(item, dest, ignore=shutil.ignore_patterns("*.log"))
               else:
                   shutil.copy2(item, dest)
+
+          # Keep upstream GitHub workflows except its secret-dependent Android release workflow.
+          upstream_github = source / ".github"
+          if upstream_github.exists():
+              shutil.copytree(upstream_github, root / ".github", dirs_exist_ok=True,
+                              ignore=shutil.ignore_patterns("*.log"))
           PY
 
           # Mark the imported upstream project as a modified NETHA build.
@@ -73,7 +91,7 @@ jobs:
                   readme.write_text(note + original)
           PY
 
-          # Use a secrets-free debug build workflow for this repository.
+          # Replace the upstream secrets-dependent release workflow with a debug build.
           cat > .github/workflows/android.yml <<'YAML'
           name: Android Build
           on:
@@ -103,6 +121,7 @@ jobs:
                     path: app/build/outputs/apk/github/debug/*.apk
                     if-no-files-found: error
           YAML
+          rm -f NethaDownloder-main.zip
 
       - name: Commit imported source
         run: |
