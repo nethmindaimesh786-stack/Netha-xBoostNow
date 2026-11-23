@@ -134,9 +134,15 @@
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/home_toolbar"
             android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:minHeight="64dp"
+            android:paddingHorizontal="12dp"
+            android:background="?attr/colorPrimary"
             app:title="@string/app"
-            app:layout_scrollFlags="scroll|enterAlways"
-            android:layout_height="wrap_content" />
+            app:subtitle="YOUR PERSONAL MEDIA HUB"
+            app:titleTextColor="?attr/colorOnPrimary"
+            app:subtitleTextColor="?attr/colorOnPrimary"
+            app:layout_scrollFlags="scroll|enterAlways" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
