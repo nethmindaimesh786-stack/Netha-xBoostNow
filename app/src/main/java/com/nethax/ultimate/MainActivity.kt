@@ -1,1107 +1,344 @@
-package com.nethax.ultimate
+package com.netha.downloader
 
-import android.Manifest
 import android.app.Activity
-import android.app.ActivityOptions
-import android.content.ContentValues
+import android.app.DownloadManager
+import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.os.storage.StorageManager
-import android.provider.MediaStore
-import android.provider.Settings
-import android.system.OsConstants
-import android.text.Html
-import android.util.Base64
-import android.webkit.JavascriptInterface
-import android.webkit.PermissionRequest
-import android.webkit.ValueCallback
-import android.webkit.WebChromeClient
-import android.webkit.WebResourceRequest
-import android.webkit.WebResourceResponse
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import android.os.Handler
+import android.os.Looper
+import android.view.Gravity
+import android.view.View
+import android.view.inputmethod.InputMethodManager
+import android.widget.Button
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.ScrollView
+import android.widget.TextView
 import android.widget.Toast
-import androidx.webkit.WebViewAssetLoader
-import com.google.mlkit.nl.languageid.LanguageIdentification
-import com.google.mlkit.nl.languageid.LanguageIdentifier
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.TextRecognizer
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
-import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
-import java.net.URLEncoder
+import java.util.Locale
 import java.util.concurrent.Executors
 
 class MainActivity : Activity() {
-
-    private lateinit var webView: WebView
-    private lateinit var assetLoader: WebViewAssetLoader
-
-    private var filePathCallback: ValueCallback<Array<Uri>>? = null
-    private var pendingCameraRequest: PermissionRequest? = null
-
-    private var textRecognizer: TextRecognizer? = null
-    private var languageIdentifier: LanguageIdentifier? = null
-
-    private val translationExecutor = Executors.newSingleThreadExecutor()
-    private val translationStateLock = Any()
-
-    @Volatile
-    private var lastProcessedText = ""
-
-    @Volatile
-    private var lastDetectedLanguage = ""
-
-    @Volatile
-    private var lastTranslation = ""
-
-    @Volatile
-    private var activeTranslationSessionId = 0
-
-    @Volatile
-    private var isActivityDestroyed = false
-
-    companion object {
-        private const val FILE_CHOOSER_REQUEST_CODE = 1001
-        private const val CAMERA_PERMISSION_REQUEST_CODE = 2001
-
-        private const val CACHE_PERMISSION_REQUEST_CODE = 3001
-        private const val CACHE_CLEAR_REQUEST_CODE = 3002
-
-        private const val MAX_FRAME_BASE64_LENGTH = 5_000_000
-        private const val MAX_TRANSLATION_BYTES = 450
-    }
-
-    private fun isActiveSession(sessionId: Int): Boolean {
-        return !isActivityDestroyed &&
-            activeTranslationSessionId == sessionId
-    }
-
-    private fun resetTranslationState(sessionId: Int) {
-        synchronized(translationStateLock) {
-            activeTranslationSessionId = sessionId
-            lastProcessedText = ""
-            lastDetectedLanguage = ""
-            lastTranslation = ""
-        }
-    }
-
-    private fun getTextRecognizer(): TextRecognizer {
-        return textRecognizer ?: TextRecognition
-            .getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-            .also {
-                textRecognizer = it
-            }
-    }
-
-    private fun getLanguageIdentifier(): LanguageIdentifier {
-        return languageIdentifier ?: LanguageIdentification
-            .getClient()
-            .also {
-                languageIdentifier = it
-            }
-    }
-
-    private fun recycleBitmap(bitmap: Bitmap?) {
-        try {
-            if (bitmap != null && !bitmap.isRecycled) {
-                bitmap.recycle()
-            }
-        } catch (_: Exception) {
-        }
-    }
+    private val bg = Color.rgb(8, 13, 24)
+    private val panel = Color.rgb(17, 27, 43)
+    private val accent = Color.rgb(0, 220, 170)
+    private val muted = Color.rgb(164, 180, 199)
+    private val executor = Executors.newSingleThreadExecutor()
+    private val handler = Handler(Looper.getMainLooper())
+    private lateinit var linkInput: EditText
+    private lateinit var status: TextView
+    private lateinit var progress: ProgressBar
+    private lateinit var downloadManager: DownloadManager
+    private var activeDownloadId = -1L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        webView = WebView(this)
-
-        webView.settings.javaScriptEnabled = true
-        webView.settings.domStorageEnabled = true
-
-        assetLoader = WebViewAssetLoader.Builder()
-            .addPathHandler(
-                "/assets/",
-                WebViewAssetLoader.AssetsPathHandler(this)
-            )
-            .build()
-
-        webView.webViewClient = object : WebViewClient() {
-
-            override fun shouldInterceptRequest(
-                view: WebView?,
-                request: WebResourceRequest?
-            ): WebResourceResponse? {
-                return request?.url?.let {
-                    assetLoader.shouldInterceptRequest(it)
-                }
-            }
-
-            @Suppress("DEPRECATION")
-            override fun shouldInterceptRequest(
-                view: WebView?,
-                url: String?
-            ): WebResourceResponse? {
-                return url?.let {
-                    assetLoader.shouldInterceptRequest(Uri.parse(it))
-                }
-            }
-
-            override fun shouldOverrideUrlLoading(
-                view: WebView?,
-                request: WebResourceRequest?
-            ): Boolean {
-                val uri = request?.url ?: return true
-
-                return !(
-                    uri.scheme == "https" &&
-                    uri.host == "appassets.androidplatform.net"
-                )
-            }
-        }
-
-        webView.addJavascriptInterface(
-            AndroidBridge(),
-            "AndroidBridge"
-        )
-
-        webView.webChromeClient = object : WebChromeClient() {
-
-            override fun onPermissionRequest(request: PermissionRequest) {
-                runOnUiThread {
-
-                    val trustedOrigin =
-                        request.origin.scheme == "https" &&
-                        request.origin.host == "appassets.androidplatform.net"
-
-                    val wantsCamera = request.resources.contains(
-                        PermissionRequest.RESOURCE_VIDEO_CAPTURE
-                    )
-
-                    if (!trustedOrigin || !wantsCamera) {
-                        request.deny()
-                        return@runOnUiThread
-                    }
-
-                    if (
-                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-                        checkSelfPermission(Manifest.permission.CAMERA) !=
-                        PackageManager.PERMISSION_GRANTED
-                    ) {
-
-                        if (pendingCameraRequest != null) {
-                            request.deny()
-                            return@runOnUiThread
-                        }
-
-                        pendingCameraRequest = request
-
-                        requestPermissions(
-                            arrayOf(Manifest.permission.CAMERA),
-                            CAMERA_PERMISSION_REQUEST_CODE
-                        )
-
-                    } else {
-                        request.grant(
-                            arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE)
-                        )
-                    }
-                }
-            }
-
-            override fun onPermissionRequestCanceled(
-                request: PermissionRequest
-            ) {
-                runOnUiThread {
-                    if (pendingCameraRequest === request) {
-                        pendingCameraRequest = null
-                    }
-                }
-            }
-
-            override fun onShowFileChooser(
-                webView: WebView?,
-                callback: ValueCallback<Array<Uri>>?,
-                params: FileChooserParams?
-            ): Boolean {
-
-                filePathCallback?.onReceiveValue(null)
-                filePathCallback = callback
-
-                return try {
-
-                    val intent = params?.createIntent()
-                        ?: Intent(Intent.ACTION_GET_CONTENT).apply {
-                            addCategory(Intent.CATEGORY_OPENABLE)
-                            type = "image/*"
-                        }
-
-                    startActivityForResult(
-                        intent,
-                        FILE_CHOOSER_REQUEST_CODE
-                    )
-
-                    true
-
-                } catch (e: Exception) {
-
-                    filePathCallback?.onReceiveValue(null)
-                    filePathCallback = null
-                    false
-                }
-            }
-        }
-
-        setContentView(webView)
-
-        webView.loadUrl(
-            "https://appassets.androidplatform.net/assets/splash.html"
-        )
+        downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        buildScreen()
+        handleIncomingIntent(intent)
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(
-            requestCode,
-            permissions,
-            grantResults
-        )
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingIntent(intent)
+    }
 
-        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
-
-            val request = pendingCameraRequest
-            pendingCameraRequest = null
-
-            if (request == null) return
-
-            if (
-                grantResults.isNotEmpty() &&
-                grantResults[0] == PackageManager.PERMISSION_GRANTED
-            ) {
-                request.grant(
-                    arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE)
-                )
-            } else {
-                request.deny()
-            }
+    private fun handleIncomingIntent(intent: Intent?) {
+        val shared = when (intent?.action) {
+            Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)
+            Intent.ACTION_VIEW -> intent.dataString
+            else -> null
+        }
+        if (!shared.isNullOrBlank()) {
+            linkInput.setText(shared.trim())
+            status.text = "Link received. Check it, then tap Download."
         }
     }
 
-    inner class AndroidBridge {
+    private fun buildScreen() {
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(bg)
+            setPadding(dp(20), dp(18), dp(20), dp(20))
+        }
+        val scroll = ScrollView(this)
+        val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        content.addView(TextView(this).apply {
+            text = "NETHA"
+            textSize = 15f
+            letterSpacing = 0.28f
+            setTextColor(accent)
+            gravity = Gravity.CENTER
+        }, matchWrap())
+        content.addView(TextView(this).apply {
+            text = "DOWNLOADER"
+            textSize = 30f
+            letterSpacing = 0.06f
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
+            setPadding(0, dp(4), 0, dp(4))
+        }, matchWrap())
+        content.addView(TextView(this).apply {
+            text = "Save media you own or have permission to download."
+            textSize = 13f
+            setTextColor(muted)
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(20))
+        }, matchWrap())
 
-        @JavascriptInterface
-        fun requestCacheClear() {
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(18), dp(16), dp(16))
+            setBackgroundColor(panel)
+        }
+        card.addView(label("PASTE A DIRECT MEDIA URL"))
+        linkInput = EditText(this).apply {
+            hint = "https://example.com/video.mp4"
+            textSize = 14f
+            singleLine = false
+            minLines = 2
+            maxLines = 3
+            setTextColor(Color.WHITE)
+            setHintTextColor(muted)
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setBackgroundColor(Color.rgb(29, 43, 62))
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_URI
+        }
+        card.addView(linkInput, LinearMatch(dp(12)))
+        card.addView(Button(this).apply {
+            text = "CHECK & DOWNLOAD"
+            setTextColor(Color.BLACK)
+            setBackgroundTintList(android.content.res.ColorStateList.valueOf(accent))
+            setOnClickListener { startDownload() }
+        }, LinearMatch(dp(14)))
+        progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            max = 100
+            progress = 0
+            visibility = View.GONE
+        }
+        card.addView(progress, LinearMatch(dp(10)))
+        status = TextView(this).apply {
+            text = "Ready. Paste a direct MP4, MP3, M4A, WebM or other media-file URL."
+            textSize = 13f
+            setTextColor(muted)
+            setPadding(0, dp(12), 0, 0)
+        }
+        card.addView(status, matchWrap())
+        content.addView(card, LinearMatch(dp(18)))
 
+        content.addView(sectionTitle("SUPPORTED LINK TYPES"))
+        content.addView(infoCard(
+            "DIRECT VIDEO / AUDIO FILES",
+            "Downloads supported direct media URLs to Downloads/NethaDownloader. The app checks the server response before starting."
+        ))
+        content.addView(infoCard(
+            "YOUTUBE · TIKTOK · FACEBOOK",
+            "Paste these links to identify the platform and open its official app/site. This app does not extract streams, bypass restrictions, or convert protected platform videos. Use the platform's own download/export option for your own content when available."
+        ))
+        content.addView(sectionTitle("HOW TO USE"))
+        content.addView(infoCard("01  Copy or share a link", "Share a link to NETHA DOWNLOADER, or paste it into the box above."))
+        content.addView(infoCard("02  Download permitted media", "Use a direct media-file URL that you own or are allowed to save. Platform page URLs are not direct media files."))
+        content.addView(infoCard("03  Find your file", "Completed downloads are saved in your phone's Downloads/NethaDownloader folder."))
+        content.addView(TextView(this).apply {
+            text = "NETHA DOWNLOADER  •  PRIVATE & SIMPLE"
+            textSize = 11f
+            gravity = Gravity.CENTER
+            setTextColor(muted)
+            setPadding(0, dp(18), 0, dp(8))
+        }, matchWrap())
+        scroll.addView(content)
+        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+        setContentView(root)
+    }
+
+    private fun startDownload() {
+        val raw = linkInput.text.toString().trim()
+        val uri = try { Uri.parse(raw) } catch (_: Exception) { null }
+        if (raw.isBlank() || uri == null || (uri.scheme != "https" && uri.scheme != "http") || uri.host.isNullOrBlank()) {
+            status.text = "Enter a valid http:// or https:// link."
+            return
+        }
+        val host = uri.host!!.lowercase(Locale.US)
+        val platform = when {
+            host == "youtu.be" || host.endsWith("youtube.com") || host.endsWith("youtube-nocookie.com") -> "YouTube"
+            host.endsWith("tiktok.com") -> "TikTok"
+            host.endsWith("facebook.com") || host == "fb.watch" || host.endsWith("fb.watch") -> "Facebook"
+            else -> null
+        }
+        if (platform != null) {
+            status.text = "$platform link detected. Open the official platform and use its permitted Save/Download or creator-export feature. Page links cannot be downloaded as raw media files here."
+            openPlatform(raw)
+            return
+        }
+        hideKeyboard()
+        status.text = "Checking whether this URL is a media file…"
+        progress.visibility = View.VISIBLE
+        progress.isIndeterminate = true
+        executor.execute {
+            var contentType = ""
+            var checkError: String? = null
+            try {
+                val connection = URL(raw).openConnection() as HttpURLConnection
+                connection.requestMethod = "HEAD"
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
+                connection.instanceFollowRedirects = true
+                connection.setRequestProperty("User-Agent", "NethaDownloader/1.0")
+                connection.connect()
+                val code = connection.responseCode
+                contentType = connection.contentType.orEmpty().lowercase(Locale.US)
+                if (code !in 200..299) checkError = "Server returned HTTP $code."
+                connection.disconnect()
+            } catch (e: Exception) {
+                checkError = e.message ?: "Could not check this URL."
+            }
             runOnUiThread {
-
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-                    sendCacheClearStatus(
-                        "This cache cleaning feature requires Android 11 or newer.",
-                        false
-                    )
+                progress.isIndeterminate = false
+                progress.visibility = View.GONE
+                val path = uri.lastPathSegment.orEmpty().lowercase(Locale.US)
+                val knownExtension = listOf(".mp4", ".m4v", ".mov", ".webm", ".mkv", ".mp3", ".m4a", ".aac", ".wav", ".ogg", ".flac").any { path.endsWith(it) }
+                val mediaType = contentType.startsWith("video/") || contentType.startsWith("audio/") || contentType.startsWith("application/octet-stream")
+                if (checkError != null && !knownExtension) {
+                    status.text = "Could not verify this link as a media file. " + checkError + " Try a direct file URL."
                     return@runOnUiThread
                 }
-
-                if (!Environment.isExternalStorageManager()) {
-
-                    try {
-
-                        val permissionIntent = Intent(
-                            Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-                            Uri.parse("package:$packageName")
-                        )
-
-                        startActivityForResult(
-                            permissionIntent,
-                            CACHE_PERMISSION_REQUEST_CODE
-                        )
-
-                        sendCacheClearStatus(
-                            "Please enable All files access for NETHA X ULTIMATE, then return and tap Clear Cache again.",
-                            false
-                        )
-
-                    } catch (e: Exception) {
-
-                        sendCacheClearStatus(
-                            "Unable to open storage permission settings.",
-                            false
-                        )
-                    }
-
+                if (!mediaType && !knownExtension) {
+                    status.text = "This link does not appear to be a direct video/audio file (server type: " + (contentType.ifBlank { "unknown" }) + ")."
                     return@runOnUiThread
                 }
-
-                launchSystemCacheClear()
-            }
-        }
-
-        @JavascriptInterface
-        fun resetTranslation(sessionId: Int) {
-            resetTranslationState(sessionId)
-        }
-
-        @JavascriptInterface
-        fun saveImage(dataUrl: String) {
-
-            try {
-
-                val base64Data = dataUrl.substringAfter(",", "")
-
-                if (base64Data.isBlank()) {
-                    throw Exception("Invalid image data")
-                }
-
-                if (base64Data.length > MAX_FRAME_BASE64_LENGTH * 4) {
-                    throw Exception("Image is too large")
-                }
-
-                val imageBytes = Base64.decode(
-                    base64Data,
-                    Base64.DEFAULT
-                )
-
-                if (imageBytes.size > 20 * 1024 * 1024) {
-                    throw Exception("Image is too large")
-                }
-
-                val values = ContentValues().apply {
-
-                    put(
-                        MediaStore.MediaColumns.DISPLAY_NAME,
-                        "NETHA-${System.currentTimeMillis()}.png"
-                    )
-
-                    put(
-                        MediaStore.MediaColumns.MIME_TYPE,
-                        "image/png"
-                    )
-
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-
-                        put(
-                            MediaStore.MediaColumns.RELATIVE_PATH,
-                            "Pictures/NETHA X"
-                        )
-
-                        put(
-                            MediaStore.MediaColumns.IS_PENDING,
-                            1
-                        )
-                    }
-                }
-
-                val imageUri = contentResolver.insert(
-                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                    values
-                ) ?: throw Exception("Gallery save failed")
-
-                try {
-
-                    contentResolver.openOutputStream(imageUri)?.use {
-                        it.write(imageBytes)
-                    } ?: throw Exception("Cannot open image file")
-
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-
-                        val completedValues = ContentValues().apply {
-                            put(MediaStore.MediaColumns.IS_PENDING, 0)
-                        }
-
-                        contentResolver.update(
-                            imageUri,
-                            completedValues,
-                            null,
-                            null
-                        )
-                    }
-
-                    runOnUiThread {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "Image saved to Gallery!",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-
-                } catch (e: Exception) {
-
-                    contentResolver.delete(imageUri, null, null)
-                    throw e
-                }
-
-            } catch (e: Exception) {
-
-                runOnUiThread {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Download failed: ${e.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
-        }
-
-        @JavascriptInterface
-        fun processTranslationFrame(
-            dataUrl: String,
-            sessionId: Int
-        ) {
-
-            if (!isActiveSession(sessionId)) return
-
-            var bitmap: Bitmap? = null
-
-            try {
-
-                val base64Data = dataUrl.substringAfter(",", "")
-
-                if (
-                    base64Data.isBlank() ||
-                    base64Data.length > MAX_FRAME_BASE64_LENGTH
-                ) {
-                    sendTCResult(
-                        "",
-                        "",
-                        "",
-                        "Invalid camera frame",
-                        sessionId
-                    )
-                    return
-                }
-
-                val imageBytes = Base64.decode(
-                    base64Data,
-                    Base64.DEFAULT
-                )
-
-                if (!isActiveSession(sessionId)) return
-
-                bitmap = BitmapFactory.decodeByteArray(
-                    imageBytes,
-                    0,
-                    imageBytes.size
-                ) ?: throw Exception("Cannot read camera frame")
-
-                val frameBitmap = bitmap
-                val inputImage = InputImage.fromBitmap(frameBitmap, 0)
-
-                getTextRecognizer()
-                    .process(inputImage)
-                    .addOnSuccessListener { visionText ->
-
-                        recycleBitmap(frameBitmap)
-                        bitmap = null
-
-                        if (!isActiveSession(sessionId)) return@addOnSuccessListener
-
-                        val detectedText = visionText.text.trim()
-
-                        if (detectedText.isBlank()) {
-                            sendTCResult(
-                                "",
-                                "",
-                                "",
-                                "Looking for text...",
-                                sessionId
-                            )
-                            return@addOnSuccessListener
-                        }
-
-                        val isUnchanged = synchronized(translationStateLock) {
-
-                            if (
-                                activeTranslationSessionId != sessionId ||
-                                isActivityDestroyed
-                            ) {
-                                return@synchronized false
-                            }
-
-                            detectedText == lastProcessedText
-                        }
-
-                        if (!isActiveSession(sessionId)) {
-                            return@addOnSuccessListener
-                        }
-
-                        if (isUnchanged) {
-                            sendTCResult(
-                                detectedText,
-                                "unchanged",
-                                "",
-                                "Text detected — no change",
-                                sessionId
-                            )
-                            return@addOnSuccessListener
-                        }
-
-                        synchronized(translationStateLock) {
-
-                            if (
-                                activeTranslationSessionId != sessionId ||
-                                isActivityDestroyed
-                            ) {
-                                return@synchronized
-                            }
-
-                            lastProcessedText = detectedText
-                            lastDetectedLanguage = ""
-                            lastTranslation = ""
-                        }
-
-                        if (!isActiveSession(sessionId)) {
-                            return@addOnSuccessListener
-                        }
-
-                        getLanguageIdentifier()
-                            .identifyLanguage(detectedText)
-                            .addOnSuccessListener { languageCode ->
-
-                                if (!isActiveSession(sessionId)) {
-                                    return@addOnSuccessListener
-                                }
-
-                                if (
-                                    languageCode == "und" ||
-                                    languageCode.isBlank()
-                                ) {
-                                    sendTCResult(
-                                        detectedText,
-                                        "Unknown",
-                                        "",
-                                        "Language could not be detected",
-                                        sessionId
-                                    )
-                                    return@addOnSuccessListener
-                                }
-
-                                synchronized(translationStateLock) {
-
-                                    if (
-                                        activeTranslationSessionId != sessionId ||
-                                        isActivityDestroyed
-                                    ) {
-                                        return@synchronized
-                                    }
-
-                                    lastDetectedLanguage = languageCode
-                                }
-
-                                if (!isActiveSession(sessionId)) {
-                                    return@addOnSuccessListener
-                                }
-
-                                translateToSinhala(
-                                    detectedText,
-                                    languageCode,
-                                    sessionId
-                                )
-                            }
-                            .addOnFailureListener {
-
-                                if (!isActiveSession(sessionId)) {
-                                    return@addOnFailureListener
-                                }
-
-                                sendTCResult(
-                                    detectedText,
-                                    "Unknown",
-                                    "",
-                                    "Language detection failed",
-                                    sessionId
-                                )
-                            }
-                    }
-                    .addOnFailureListener { error ->
-
-                        recycleBitmap(frameBitmap)
-                        bitmap = null
-
-                        if (!isActiveSession(sessionId)) {
-                            return@addOnFailureListener
-                        }
-
-                        sendTCResult(
-                            "",
-                            "",
-                            "",
-                            "OCR error: ${error.message ?: "Try again"}",
-                            sessionId
-                        )
-                    }
-
-            } catch (e: Exception) {
-
-                recycleBitmap(bitmap)
-
-                if (!isActiveSession(sessionId)) return
-
-                sendTCResult(
-                    "",
-                    "",
-                    "",
-                    "Frame error: ${e.message ?: "Try again"}",
-                    sessionId
-                )
+                enqueueDownload(raw, uri)
             }
         }
     }
 
-    // Launch Android's official system cache-clear confirmation.
-    private fun launchSystemCacheClear() {
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-            sendCacheClearStatus(
-                "Android 11 or newer is required.",
-                false
-            )
-            return
-        }
-
+    private fun enqueueDownload(raw: String, uri: Uri) {
         try {
-
-            val clearIntent = Intent(
-                StorageManager.ACTION_CLEAR_APP_CACHE
-            )
-
-            if (Build.VERSION.SDK_INT >= 34) {
-
-                val options = ActivityOptions.makeBasic()
-                    .setShareIdentityEnabled(true)
-                    .toBundle()
-
-                startActivityForResult(
-                    clearIntent,
-                    CACHE_CLEAR_REQUEST_CODE,
-                    options
-                )
-
-            } else {
-
-                startActivityForResult(
-                    clearIntent,
-                    CACHE_CLEAR_REQUEST_CODE
-                )
-            }
-
-            sendCacheClearStatus(
-                "Android system cache cleanup confirmation opened.",
-                false
-            )
-
+            val fileName = safeFileName(uri.lastPathSegment ?: "netha_media")
+            val request = DownloadManager.Request(Uri.parse(raw))
+                .setTitle(fileName)
+                .setDescription("NETHA DOWNLOADER")
+                .setAllowedOverMetered(true)
+                .setAllowedOverRoaming(false)
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "NethaDownloader/$fileName")
+            activeDownloadId = downloadManager.enqueue(request)
+            status.text = "Download started: $fileName"
+            progress.visibility = View.VISIBLE
+            progress.isIndeterminate = false
+            progress.progress = 0
+            monitorDownload(activeDownloadId)
         } catch (e: Exception) {
-
-            sendCacheClearStatus(
-                "Could not start system cache cleanup: ${e.message ?: "Unknown error"}",
-                false
-            )
+            status.text = "Could not start download: " + (e.message ?: "unknown error")
+            progress.visibility = View.GONE
         }
     }
 
-    private fun sendCacheClearStatus(
-        status: String,
-        success: Boolean
-    ) {
-
-        if (isActivityDestroyed || !::webView.isInitialized) return
-
-        val result = JSONObject().apply {
-            put("status", status)
-            put("success", success)
-        }
-
-        runOnUiThread {
-
-            if (isActivityDestroyed || !::webView.isInitialized) {
-                return@runOnUiThread
-            }
-
-            webView.evaluateJavascript(
-                "window.onCacheClearStatus && " +
-                "window.onCacheClearStatus($result);",
-                null
-            )
-        }
-    }
-
-    private fun translateToSinhala(
-        originalText: String,
-        detectedLanguage: String,
-        sessionId: Int
-    ) {
-
-        if (!isActiveSession(sessionId)) return
-
-        val sourceLanguage = detectedLanguage
-            .substringBefore("-")
-            .lowercase()
-
-        if (sourceLanguage == "si") {
-
-            synchronized(translationStateLock) {
-
-                if (
-                    activeTranslationSessionId != sessionId ||
-                    isActivityDestroyed
-                ) {
-                    return
-                }
-
-                lastTranslation = originalText
-            }
-
-            sendTCResult(
-                originalText,
-                detectedLanguage,
-                originalText,
-                "Text is already in Sinhala",
-                sessionId
-            )
-            return
-        }
-
-        try {
-
-            translationExecutor.execute {
-
-                if (!isActiveSession(sessionId)) return@execute
-
-                try {
-
-                    val textBytes = originalText.toByteArray(Charsets.UTF_8)
-
-                    if (textBytes.size > MAX_TRANSLATION_BYTES) {
-                        throw Exception(
-                            "Text is too long. Please focus on a shorter text."
-                        )
+    private fun monitorDownload(id: Long) {
+        val query = DownloadManager.Query().setFilterById(id)
+        val poll = object : Runnable {
+            override fun run() {
+                if (isFinishing || id != activeDownloadId) return
+                val cursor = downloadManager.query(query)
+                if (cursor != null && cursor.moveToFirst()) {
+                    val statusCol = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                    val downloadedCol = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                    val totalCol = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+                    val state = if (statusCol >= 0) cursor.getInt(statusCol) else -1
+                    val downloaded = if (downloadedCol >= 0) cursor.getLong(downloadedCol) else 0L
+                    val total = if (totalCol >= 0) cursor.getLong(totalCol) else -1L
+                    if (total > 0) progress.progress = ((downloaded * 100) / total).toInt().coerceIn(0, 100)
+                    when (state) {
+                        DownloadManager.STATUS_SUCCESSFUL -> {
+                            progress.progress = 100
+                            status.text = "Download complete. Find it in Downloads/NethaDownloader."
+                            cursor.close()
+                            return
+                        }
+                        DownloadManager.STATUS_FAILED -> {
+                            status.text = "Download failed. The server may block downloads or require access."
+                            progress.visibility = View.GONE
+                            cursor.close()
+                            return
+                        }
+                        else -> status.text = if (total > 0) "Downloading… " + progress.progress + "%" else "Downloading…"
                     }
-
-                    val encodedText = URLEncoder.encode(
-                        originalText,
-                        "UTF-8"
-                    )
-
-                    val languagePair = "$sourceLanguage|si"
-
-                    val encodedPair = URLEncoder.encode(
-                        languagePair,
-                        "UTF-8"
-                    )
-
-                    val url = URL(
-                        "https://api.mymemory.translated.net/get" +
-                        "?q=$encodedText&langpair=$encodedPair"
-                    )
-
-                    val connection = url.openConnection()
-                        as HttpURLConnection
-
-                    connection.requestMethod = "GET"
-                    connection.connectTimeout = 10000
-                    connection.readTimeout = 10000
-
-                    connection.setRequestProperty(
-                        "User-Agent",
-                        "NETHA-X-ULTIMATE"
-                    )
-
-                    try {
-
-                        if (!isActiveSession(sessionId)) {
-                            return@execute
-                        }
-
-                        val responseCode = connection.responseCode
-
-                        if (!isActiveSession(sessionId)) {
-                            return@execute
-                        }
-
-                        val responseStream =
-                            if (responseCode in 200..299) {
-                                connection.inputStream
-                            } else {
-                                connection.errorStream
-                            }
-
-                        val response = responseStream
-                            ?.bufferedReader()
-                            ?.use { it.readText() }
-                            ?: throw Exception("Empty translation response")
-
-                        if (!isActiveSession(sessionId)) {
-                            return@execute
-                        }
-
-                        if (responseCode !in 200..299) {
-                            throw Exception(
-                                "Translation service error: $responseCode"
-                            )
-                        }
-
-                        val json = JSONObject(response)
-
-                        val responseStatus = json.optInt(
-                            "responseStatus",
-                            0
-                        )
-
-                        if (responseStatus != 200) {
-                            throw Exception(
-                                json.optString(
-                                    "responseDetails",
-                                    "Translation unavailable"
-                                )
-                            )
-                        }
-
-                        val translated = json
-                            .optJSONObject("responseData")
-                            ?.optString("translatedText", "")
-                            ?.takeIf { it.isNotBlank() }
-                            ?: throw Exception("No translated text returned")
-
-                        val cleanTranslation =
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                Html.fromHtml(
-                                    translated,
-                                    Html.FROM_HTML_MODE_LEGACY
-                                ).toString()
-                            } else {
-                                @Suppress("DEPRECATION")
-                                Html.fromHtml(translated).toString()
-                            }
-
-                        if (!isActiveSession(sessionId)) {
-                            return@execute
-                        }
-
-                        synchronized(translationStateLock) {
-
-                            if (
-                                activeTranslationSessionId != sessionId ||
-                                isActivityDestroyed
-                            ) {
-                                return@synchronized
-                            }
-
-                            lastTranslation = cleanTranslation
-                        }
-
-                        sendTCResult(
-                            originalText,
-                            detectedLanguage,
-                            cleanTranslation,
-                            "Translation complete",
-                            sessionId
-                        )
-
-                    } finally {
-                        connection.disconnect()
-                    }
-
-                } catch (e: Exception) {
-
-                    if (!isActiveSession(sessionId)) {
-                        return@execute
-                    }
-
-                    sendTCResult(
-                        originalText,
-                        detectedLanguage,
-                        "",
-                        "Translation failed: ${e.message ?: "Check internet connection"}",
-                        sessionId
-                    )
-                }
-            }
-
-        } catch (e: Exception) {
-
-            if (!isActiveSession(sessionId)) return
-
-            sendTCResult(
-                originalText,
-                detectedLanguage,
-                "",
-                "Translation failed: ${e.message ?: "Please try again"}",
-                sessionId
-            )
-        }
-    }
-
-    private fun sendTCResult(
-        text: String,
-        language: String,
-        translation: String,
-        status: String,
-        sessionId: Int
-    ) {
-
-        if (!isActiveSession(sessionId) || !::webView.isInitialized) {
-            return
-        }
-
-        val result = JSONObject().apply {
-            put("text", text)
-            put("language", language)
-            put("translation", translation)
-            put("status", status)
-            put("sessionId", sessionId)
-        }
-
-        runOnUiThread {
-
-            if (!isActiveSession(sessionId)) {
-                return@runOnUiThread
-            }
-
-            if (!::webView.isInitialized) {
-                return@runOnUiThread
-            }
-
-            webView.evaluateJavascript(
-                "window.onTCNativeResult && " +
-                "window.onTCNativeResult($result);",
-                null
-            )
-        }
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(
-        requestCode: Int,
-        resultCode: Int,
-        data: Intent?
-    ) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        when (requestCode) {
-
-            FILE_CHOOSER_REQUEST_CODE -> {
-
-                val result = if (resultCode == Activity.RESULT_OK) {
-
-                    WebChromeClient.FileChooserParams.parseResult(
-                        resultCode,
-                        data
-                    )
-
+                    cursor.close()
+                    handler.postDelayed(this, 700)
                 } else {
-                    null
-                }
-
-                filePathCallback?.onReceiveValue(result)
-                filePathCallback = null
-            }
-
-            CACHE_PERMISSION_REQUEST_CODE -> {
-
-                if (
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
-                    Environment.isExternalStorageManager()
-                ) {
-
-                    sendCacheClearStatus(
-                        "Storage access granted. Return to Mobile Optimizer and tap Clear Cache again.",
-                        true
-                    )
-
-                } else {
-
-                    sendCacheClearStatus(
-                        "All files access was not enabled. Cache cleanup was not started.",
-                        false
-                    )
-                }
-            }
-
-            CACHE_CLEAR_REQUEST_CODE -> {
-
-                when (resultCode) {
-
-                    Activity.RESULT_OK -> {
-                        sendCacheClearStatus(
-                            "Android reports that the app cache cleanup completed.",
-                            true
-                        )
-                    }
-
-                    OsConstants.EIO -> {
-                        sendCacheClearStatus(
-                            "Android reported an error while clearing cache.",
-                            false
-                        )
-                    }
-
-                    else -> {
-                        sendCacheClearStatus(
-                            "Android did not confirm cache cleanup. The system may have cancelled the request or the operation may not have started.",
-                            false
-                        )
-                    }
+                    cursor?.close()
+                    progress.visibility = View.GONE
                 }
             }
         }
+        handler.post(poll)
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-
-        if (webView.canGoBack()) {
-            webView.goBack()
-        } else {
-            super.onBackPressed()
-        }
-    }
-
-    override fun onDestroy() {
-
-        isActivityDestroyed = true
-
-        synchronized(translationStateLock) {
-            activeTranslationSessionId++
-            lastProcessedText = ""
-            lastDetectedLanguage = ""
-            lastTranslation = ""
-        }
-
+    private fun openPlatform(link: String) {
         try {
-            pendingCameraRequest?.deny()
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
         } catch (_: Exception) {
+            Toast.makeText(this, "Could not open the platform link.", Toast.LENGTH_SHORT).show()
         }
-
-        pendingCameraRequest = null
-
-        filePathCallback?.onReceiveValue(null)
-        filePathCallback = null
-
-        translationExecutor.shutdownNow()
-
-        textRecognizer?.close()
-        textRecognizer = null
-
-        languageIdentifier?.close()
-        languageIdentifier = null
-
-        if (::webView.isInitialized) {
-            webView.stopLoading()
-            webView.removeJavascriptInterface("AndroidBridge")
-            webView.destroy()
-        }
-
-        super.onDestroy()
     }
+
+    private fun safeFileName(input: String): String {
+        val cleaned = input.substringAfterLast('/').substringBefore('?')
+            .replace(Regex("[^A-Za-z0-9._-]"), "_")
+            .take(90)
+        return if (cleaned.isBlank()) "netha_media" else cleaned
+    }
+
+    private fun hideKeyboard() {
+        (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
+            .hideSoftInputFromWindow(linkInput.windowToken, 0)
+        linkInput.clearFocus()
+    }
+
+    private fun label(text: String) = TextView(this).apply {
+        this.text = text
+        textSize = 12f
+        letterSpacing = 0.08f
+        setTextColor(accent)
+        setPadding(0, 0, 0, dp(10))
+    }
+
+    private fun sectionTitle(text: String) = TextView(this).apply {
+        this.text = text
+        textSize = 13f
+        letterSpacing = 0.08f
+        setTextColor(accent)
+        setPadding(dp(2), dp(10), 0, dp(8))
+    }
+
+    private fun infoCard(heading: String, body: String): View {
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            setBackgroundColor(panel)
+        }
+        box.addView(TextView(this).apply {
+            text = heading
+            textSize = 13f
+            setTextColor(Color.WHITE)
+        }, matchWrap())
+        box.addView(TextView(this).apply {
+            text = body
+            textSize = 12f
+            setTextColor(muted)
+            setPadding(0, dp(5), 0, 0)
+        }, matchWrap())
+        return box
+    }
+
+    private fun matchWrap() = LinearLayout.LayoutParams(-1, -2)
+    private fun LinearMatch(top: Int) = LinearLayout.LayoutParams(-1, -2).apply { topMargin = top }
+    private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 }
