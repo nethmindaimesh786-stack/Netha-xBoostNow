@@ -347,7 +347,7 @@
     <string name="preferred_audio_language">Preferred audio language</string>
     <string name="changelog">Changelog</string>
     <string name="source">Source</string>
-    <string name="app">App</string>
+    <string name="app">NETHA DOWNLOADER</string>
     <string name="cut_unavailable_please_update_item">You need to update the item data in order to be able to use cut feature</string>
     <string name="crop_unavailable_please_update_item">You need to update the item data in order to be able to use crop feature</string>
     <string name="changed_path_for_everyone_to">Changed every item\'s download path to:</string>
