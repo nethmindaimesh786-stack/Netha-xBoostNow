@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "NETHA X ULTIMATE"
+rootProject.name = "NETHA DOWNLOADER"
 include(":app")
