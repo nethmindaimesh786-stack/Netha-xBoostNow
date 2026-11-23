@@ -94,7 +94,7 @@
             app:icon="@drawable/baseline_security_24"
             app:key="original_security"
             app:summary="Original project privacy and security information"
-            app:title="Privacy & security">
+            app:title="Privacy &amp; security">
             <intent
                 android:action="android.intent.action.VIEW"
                 android:data="https://github.com/deniscerri/ytdlnis/blob/main/SECURITY.md" />
