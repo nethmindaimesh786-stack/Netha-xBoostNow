@@ -153,6 +153,8 @@ class MainSettingsFragment : PreferenceFragmentCompat() {
         restore = findPreference("restore")
         backupPath = findPreference("backup_path")
 
+        findPreference<Preference>("app_version")?.summary = BuildConfig.VERSION_NAME
+
         findPreference<Preference>("package_name")?.apply {
             summary = BuildConfig.APPLICATION_ID
             setOnPreferenceClickListener {
