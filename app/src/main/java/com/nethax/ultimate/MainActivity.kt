@@ -103,7 +103,7 @@ class MainActivity : Activity() {
         linkInput = EditText(this).apply {
             hint = "https://example.com/video.mp4"
             textSize = 14f
-            singleLine = false
+            setSingleLine(false)
             minLines = 2
             maxLines = 3
             setTextColor(Color.WHITE)
