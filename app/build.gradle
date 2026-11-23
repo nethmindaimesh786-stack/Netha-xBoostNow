@@ -51,7 +51,7 @@ android {
         versionCode versionMajor * 1000000 + versionMinor * 10000 + versionPatch * 100 + versionBuild
         versionName "${versionMajor}.${versionMinor}.${versionPatch}${versionExt}"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        archivesBaseName = "YTDLnis-$versionName"
+        archivesBaseName = "NETHA-DOWNLOADER-$versionName"
         vectorDrawables {
             useSupportLibrary true
         }
@@ -111,9 +111,9 @@ android {
 
             def abi = output.getFilter(com.android.build.OutputFile.ABI) ?: "universal"
             if (variant.flavorName == "github") {
-                output.outputFileName = "YTDLnis-${versionName}-${abi}-${variant.buildType.name}-${variant.flavorName}.apk"
+                output.outputFileName = "NETHA-DOWNLOADER-${versionName}-${abi}-${variant.buildType.name}.apk"
             } else {
-                output.outputFileName = "YTDLnis-${versionName}-${variant.flavorName}-${abi}-${variant.buildType.name}.apk"
+                output.outputFileName = "NETHA-DOWNLOADER-${versionName}-${abi}-${variant.buildType.name}.apk"
             }
         }
     }
@@ -138,8 +138,8 @@ android {
         abi {
             enable true
             reset()
-            include 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a'
-            universalApk true
+            include 'arm64-v8a'
+            universalApk false
         }
     }
     composeOptions {
