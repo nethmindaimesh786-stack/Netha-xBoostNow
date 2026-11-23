@@ -1,0 +1,113 @@
+name: Import NETHA Downloader source
+
+on:
+  push:
+    paths:
+      - "NethaDownloder-main.zip"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Import source archive
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import zipfile, pathlib, shutil, tempfile, os
+          archive = pathlib.Path("NethaDownloder-main.zip")
+          if not archive.exists():
+              raise SystemExit("NethaDownloder-main.zip was not found in the repository root")
+          temp = pathlib.Path(tempfile.mkdtemp())
+          with zipfile.ZipFile(archive) as z:
+              roots = {p.split("/", 1)[0] for p in z.namelist() if "/" in p}
+              if len(roots) != 1:
+                  raise SystemExit("Unexpected ZIP layout: expected one top-level project folder")
+              z.extractall(temp)
+          source = temp / next(iter(roots))
+          if not (source / "settings.gradle").exists() or not (source / "app" / "build.gradle").exists():
+              raise SystemExit("ZIP does not contain the expected Android Gradle project")
+          excluded = {".idea", ".kotlin", ".gradle", "build"}
+          for item in source.iterdir():
+              if item.name in excluded:
+                  continue
+              dest = pathlib.Path(item.name)
+              if dest.is_dir():
+                  if dest.name == ".github" and dest.exists():
+                      shutil.copytree(item, dest, dirs_exist_ok=True, ignore=shutil.ignore_patterns("*.log"))
+                  else:
+                      if dest.exists():
+                          shutil.rmtree(dest)
+                      shutil.copytree(item, dest, ignore=shutil.ignore_patterns("*.log"))
+              else:
+                  shutil.copy2(item, dest)
+          PY
+
+          # Mark the imported upstream project as a modified NETHA build.
+          python3 - <<'PY'
+          from pathlib import Path
+          manifest = Path("app/src/main/AndroidManifest.xml")
+          if manifest.exists():
+              s = manifest.read_text()
+              s = s.replace('android:label="YTDLnis"', 'android:label="NETHA DOWNLOADER"')
+              manifest.write_text(s)
+          readme = Path("README.md")
+          if readme.exists():
+              note = """# NETHA DOWNLOADER (modified YTDLnis build)
+
+          This repository contains a modified build of [YTDLnis](https://github.com/deniscerri/ytdlnis), originally created by Denis Çerri. The upstream project is licensed under GNU GPL v3; see [LICENSE](LICENSE). Changes for this repository include the NETHA DOWNLOADER app label and its repository build workflow. Upstream copyright and license notices are retained.
+
+          ---
+
+          """
+              original = readme.read_text()
+              if not original.startswith("# NETHA DOWNLOADER"):
+                  readme.write_text(note + original)
+          PY
+
+          # Use a secrets-free debug build workflow for this repository.
+          cat > .github/workflows/android.yml <<'YAML'
+          name: Android Build
+          on:
+            push:
+              branches: ["**"]
+            workflow_dispatch:
+          permissions:
+            contents: read
+          jobs:
+            build:
+              runs-on: ubuntu-latest
+              steps:
+                - uses: actions/checkout@v4
+                - uses: actions/setup-java@v4
+                  with:
+                    distribution: temurin
+                    java-version: "17"
+                    cache: gradle
+                - name: Build APK
+                  run: |
+                    chmod +x gradlew
+                    ./gradlew assembleGithubDebug --stacktrace
+                - name: Upload APK
+                  uses: actions/upload-artifact@v4
+                  with:
+                    name: NETHA-DOWNLOADER-debug
+                    path: app/build/outputs/apk/github/debug/*.apk
+                    if-no-files-found: error
+          YAML
+
+      - name: Commit imported source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Import NETHA DOWNLOADER source from supplied ZIP"
+          git push
