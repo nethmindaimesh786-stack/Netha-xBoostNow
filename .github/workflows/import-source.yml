@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  import:
+  import-and-build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -18,21 +18,23 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Fetch the exact upstream project used by the supplied ZIP
-        run: |
-          git clone --depth 1 https://github.com/deniscerri/ytdlnis.git upstream
+      - name: Fetch YTDLnis source matching the supplied archive
+        run: git clone --depth 1 https://github.com/deniscerri/ytdlnis.git upstream
 
-      - name: Replace repository with downloader source
+      - name: Replace old app source while preserving repository workflows
         shell: bash
         run: |
           python3 - <<'PY'
           import pathlib, shutil
           root = pathlib.Path(".")
-          source = pathlib.Path("upstream")
-          workflow = root / ".github/workflows/import-source.yml"
-          workflow_bytes = workflow.read_bytes()
+          source = root / "upstream"
+          workflow_dir = root / ".github/workflows"
+          keep = {
+              "import-source.yml": (workflow_dir / "import-source.yml").read_bytes(),
+              "android-build.yml": (workflow_dir / "android-build.yml").read_bytes(),
+          }
 
-          excluded = {".git", ".idea", ".kotlin", ".gradle", "build"}
+          excluded = {".git", ".idea", ".kotlin", ".gradle", "build", ".github", "upstream"}
           for item in list(root.iterdir()):
               if item.name in {".git", "upstream"}:
                   continue
@@ -50,8 +52,9 @@ jobs:
               else:
                   shutil.copy2(item, dest)
 
-          (root / ".github/workflows").mkdir(parents=True, exist_ok=True)
-          (root / ".github/workflows/import-source.yml").write_bytes(workflow_bytes)
+          workflow_dir.mkdir(parents=True, exist_ok=True)
+          for name, data in keep.items():
+              (workflow_dir / name).write_bytes(data)
 
           manifest = root / "app/src/main/AndroidManifest.xml"
           if manifest.exists():
@@ -72,39 +75,6 @@ jobs:
               if not original.startswith("# NETHA DOWNLOADER"):
                   readme.write_text(note + original)
           PY
-
-      - name: Configure NETHA debug build workflow
-        shell: bash
-        run: |
-          cat > .github/workflows/android.yml <<'YAML'
-          name: Android Build
-          on:
-            push:
-              branches: ["**"]
-            workflow_dispatch:
-          permissions:
-            contents: read
-          jobs:
-            build:
-              runs-on: ubuntu-latest
-              steps:
-                - uses: actions/checkout@v4
-                - uses: actions/setup-java@v4
-                  with:
-                    distribution: temurin
-                    java-version: "17"
-                    cache: gradle
-                - name: Build APK
-                  run: |
-                    chmod +x gradlew
-                    ./gradlew assembleGithubDebug --stacktrace
-                - name: Upload APK
-                  uses: actions/upload-artifact@v4
-                  with:
-                    name: NETHA-DOWNLOADER-debug
-                    path: app/build/outputs/apk/github/debug/*.apk
-                    if-no-files-found: error
-          YAML
           rm -rf upstream
 
       - name: Commit imported source
@@ -114,3 +84,22 @@ jobs:
           git add -A
           git commit -m "Import NETHA DOWNLOADER source project"
           git push
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Build debug APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleGithubDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NETHA-DOWNLOADER-debug
+          path: app/build/outputs/apk/github/debug/*.apk
+          if-no-files-found: error
