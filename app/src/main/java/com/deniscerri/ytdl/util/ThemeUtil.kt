@@ -147,23 +147,16 @@ object ThemeUtil {
     }
 
     fun getThemeColor(context: Context, colorCode: Int): Int {
-        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        val accent = sharedPreferences.getString("theme_accent", "blue")
-        return if (accent == "blue"){
-            "d43c3b".toInt(16)
-        }else{
-            val value = TypedValue()
-            context.theme.resolveAttribute(colorCode, value, true)
-            value.data
-        }
-
+        val value = TypedValue()
+        context.theme.resolveAttribute(colorCode, value, true)
+        return value.data
     }
 
     /**
      * Get the styled app name
      */
     fun getStyledAppName(context: Context): Spanned {
-        val colorPrimary = getThemeColor(context, androidx.appcompat.R.attr.colorPrimaryDark)
+        val colorPrimary = getThemeColor(context, androidx.appcompat.R.attr.colorPrimary)
         val hexColor = "#%06X".format(0xFFFFFF and colorPrimary)
         return "<span style='color:$hexColor';>NETHA</span> DOWNLOADER"
             .parseAsHtml(HtmlCompat.FROM_HTML_MODE_COMPACT)

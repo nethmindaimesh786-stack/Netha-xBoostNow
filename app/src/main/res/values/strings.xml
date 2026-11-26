@@ -762,4 +762,9 @@
     <string name="metadata_language">Language</string>
     <string name="metadata_purl">URL (purl)</string>
     <string name="metadata_synopsis">Synopsis</string>
+    <string name="home_eyebrow">NETHA  •  MEDIA DOWNLOADER</string>
+    <string name="home_hero_title">Your next download starts here.</string>
+    <string name="home_hero_description">Search for media or paste a link to choose your download.</string>
+    <string name="home_search_label">START A DOWNLOAD</string>
+    <string name="home_search_helper">Paste a supported link or search for a title.</string>
 </resources>

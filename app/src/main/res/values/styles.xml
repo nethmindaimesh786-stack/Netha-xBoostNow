@@ -114,4 +114,9 @@
         <item name="android:textSize">0sp</item>
     </style>
 
+    <style name="ShapeAppearanceOverlay.NethaCard" parent="ShapeAppearanceOverlay.Avatar">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">18dp</item>
+    </style>
+
 </resources>
