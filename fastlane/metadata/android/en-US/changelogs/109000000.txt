@@ -1,6 +1,0 @@
-# What's Changed
-
-- Python 3.14 with curl-cffi
-- BGUtils POT Provider
-- Reworked Terminal
-- other fixes
