@@ -4,30 +4,49 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Crown -->
     <path
-        android:fillColor="#00000000"
-        android:strokeColor="#00D9FF"
-        android:strokeWidth="2.5"
-        android:pathData="M54,9 A45,45 0,1 0,54.01 9" />
-    <path
-        android:fillColor="#F3FCFF"
-        android:strokeColor="#00D9FF"
-        android:strokeWidth="1.8"
-        android:strokeLineJoin="round"
-        android:pathData="M23,34 L37,34 L70,67 L70,34 L85,34 L85,78 L71,78 L38,45 L38,78 L23,78 Z" />
-    <path
-        android:fillColor="#DDFBFF"
-        android:strokeColor="#00D9FF"
-        android:strokeWidth="1.5"
-        android:strokeLineJoin="round"
-        android:pathData="M39,18 L47,25 L54,14 L61,25 L69,18 L67,31 L41,31 Z" />
-    <path
-        android:fillColor="#00D9FF"
-        android:strokeColor="#FFFFFF"
+        android:fillColor="#FFC857"
+        android:strokeColor="#FFE7A3"
         android:strokeWidth="1.2"
         android:strokeLineJoin="round"
-        android:pathData="M50,42 L58,42 L58,59 L68,59 L54,73 L40,59 L50,59 Z" />
+        android:pathData="M31,31 L26,20 L38,26 L45,15 L54,25 L63,15 L70,26 L82,20 L77,34 L31,34 Z" />
     <path
-        android:fillColor="#00D9FF"
-        android:pathData="M39,82 L69,82 L69,87 L39,87 Z" />
+        android:fillColor="#D99024"
+        android:pathData="M31,33 L77,33 L75,38 L33,38 Z" />
+
+    <!-- Bold N monogram -->
+    <path
+        android:fillColor="#F4FBFF"
+        android:strokeColor="#BDEEFF"
+        android:strokeWidth="1"
+        android:strokeLineJoin="round"
+        android:pathData="M25,39 L36,39 L68,69 L68,39 L81,39 L81,79 L69,79 L38,50 L38,79 L25,79 Z" />
+
+    <!-- Cyan orbit / motion swoosh -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#00E5F4"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M18,70 C34,82 54,69 87,49" />
+    <path
+        android:fillColor="#00BFCB"
+        android:pathData="M83,45 L94,45 L88,56 Z" />
+
+    <!-- Download arrow and tray -->
+    <path
+        android:fillColor="#00E6C8"
+        android:strokeColor="#003E48"
+        android:strokeWidth="0.8"
+        android:strokeLineJoin="round"
+        android:pathData="M73,55 L82,55 L82,65 L89,65 L77.5,77 L66,65 L73,65 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#00E6C8"
+        android:strokeWidth="2.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M66,82 L66,85 Q66,88 69,88 L87,88 Q90,88 90,85 L90,82" />
 </vector>
