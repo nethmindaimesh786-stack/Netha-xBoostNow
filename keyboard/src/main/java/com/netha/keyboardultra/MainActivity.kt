@@ -251,7 +251,7 @@ class MainActivity : ComponentActivity() {
         remoteList.removeAllViews()
         io.execute {
             try {
-                val endpoint = URL("https://api.github.com/repos/nethmindaimesh786-stack/Netha-xBoostNow/contents/wallpapers?ref=netha-keyboard-ultra")
+                val endpoint = URL("https://api.github.com/repos/nethmindaimesh786-stack/Netha-xBoostNow/contents/wallpapers?ref=keyboard-zip-import")
                 val connection = endpoint.openConnection() as HttpURLConnection
                 connection.connectTimeout = 10000
                 connection.readTimeout = 12000
@@ -272,7 +272,7 @@ class MainActivity : ComponentActivity() {
                 mainHandler.post {
                     remoteList.removeAllViews()
                     remoteStatus.text = if (images.isEmpty()) {
-                        "No image files yet. Upload JPG, PNG or WebP files into the wallpapers/ folder on the netha-keyboard-ultra branch."
+                        "No image files yet. Upload JPG, PNG or WebP files into the wallpapers/ folder on the keyboard-zip-import branch."
                     } else {
                         images.size.toString() + " wallpaper(s) found on GitHub."
                     }
